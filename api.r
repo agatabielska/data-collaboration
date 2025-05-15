@@ -4,7 +4,7 @@ library(httr)
 library(jsonlite)
 library(dplyr)
 
-
+apikey = '99RHTNDE9YD9TMOW'
 
 full_api <- function(date="latest", base_currency="usd") {
   url <- sprintf("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@%s/v1/currencies/%s.json", date, base_currency)
@@ -24,7 +24,6 @@ full_api <- function(date="latest", base_currency="usd") {
   tmp_df = data.frame(date = data$date)
   return(cbind(tmp_df, df))
 }
-
 
 from_to_values <- function(base_currency = "usd", start_date = "2024-03-01", end_date = "2025-05-13") {
   start_obj <- as.Date(start_date, format="%y-%m-%d")
@@ -51,6 +50,26 @@ from_to_values <- function(base_currency = "usd", start_date = "2024-03-01", end
 }
 options(max.print = 1000000)
 
+vantage_query = function(command, arguments, api_key) {
+  parsed_arguments = paste0("&", sapply(arguments, function(x) paste(x, collapse = "=")), collapse = '')
+  url = paste0('https://www.alphavantage.co/query?function=', command, parsed_arguments, '&apikey=', api_key)
+  res = GET(url)
+  if(status_code(res) == 200){
+    return(res) 
+  }
+  else{
+    return(NULL)
+  }
+}
+
+vantage_grab = function(response, argument) {
+  if(is.null(response)){
+    return(NULL)
+  }
+  data = content(response, 'text', encoding = "UTF-8")
+  data = fromJSON(data)
+  return(data$argument)
+}
 
 safe_cbind <- function(df1, df2) {
   if (!is.data.frame(df2)) {
@@ -107,3 +126,8 @@ currency_transformer
 
 rate_values <- from_to_values()
 rate_values
+
+
+vantage_query('TIME_SERIES_WEEKLY', list(c('symbol', 'GOOG'), c('interval', '30min')), apikey)
+q = vantage_query('TOP_GAINERS_LOSERS', list(), apikey)
+vantage_grab(q, 'metadata')
