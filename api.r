@@ -3,6 +3,8 @@ library(shiny)
 library(httr)
 library(jsonlite)
 library(dplyr)
+library(future)
+library(furrr)
 
 apikey = '99RHTNDE9YD9TMOW'
 
@@ -26,29 +28,24 @@ full_api <- function(date="latest", base_currency="usd") {
 }
 
 from_to_values <- function(base_currency = "usd", start_date = "2024-03-01", end_date = "2025-05-13") {
-  start_obj <- as.Date(start_date, format="%y-%m-%d")
-  end_obj <- as.Date(end_date, format="%y-%m-%d")
+  plan(multisession, workers = parallel::detectCores() - 1)
   
-  # First day of data
-  data <- full_api(as.character(start_date), base_currency)
-  data$date <- as.character(start_obj)
   dates <- seq(as.Date(start_date), as.Date(end_date), by=1)
-  print(dates)
-  
-  # Loop over remaining dates
-  
-  for (i in seq_along(dates)) {
-    date <- dates[i]
-    row <- full_api(date, base_currency)
-    
-    if (!is.null(row)){
-      data <- bind_rows(data, row)
+
+  results <- future_map_dfr(dates, function(date) {
+    row <- full_api(as.character(date), base_currency)
+    if (!is.null(row)) {
+      return(row)
+    } else {
+      return(NULL)
     }
-  }
+  }, .progress = TRUE)
   
-  return(data)
+  plan(sequential)
+  
+  return(results)
 }
-options(max.print = 1000000)
+
 
 vantage_query = function(command, arguments, api_key) {
   parsed_arguments = paste0("&", sapply(arguments, function(x) paste(x, collapse = "=")), collapse = '')
@@ -119,15 +116,15 @@ currency_finder <- function(){
   return(data)
 }
 
-colnames(short_to_currency("2024-03-06"))
+# colnames(short_to_currency("2024-03-06"))
 
-currency_transformer <- currency_finder()
-currency_transformer
+# currency_transformer <- currency_finder()
+# currency_transformer
 
-rate_values <- from_to_values()
-rate_values
+# rate_values <- from_to_values()
+# rate_values
 
 
-vantage_query('TIME_SERIES_WEEKLY', list(c('symbol', 'GOOG'), c('interval', '30min')), apikey)
-q = vantage_query('TOP_GAINERS_LOSERS', list(), apikey)
-vantage_grab(q, 'metadata')
+# vantage_query('TIME_SERIES_WEEKLY', list(c('symbol', 'GOOG'), c('interval', '30min')), apikey)
+# q = vantage_query('TOP_GAINERS_LOSERS', list(), apikey)
+# vantage_grab(q, 'metadata')
