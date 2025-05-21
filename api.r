@@ -52,20 +52,26 @@ vantage_query = function(command, arguments, api_key) {
   url = paste0('https://www.alphavantage.co/query?function=', command, parsed_arguments, '&apikey=', api_key)
   res = GET(url)
   if(status_code(res) == 200){
-    return(res) 
+    return(res)
   }
   else{
     return(NULL)
   }
 }
 
-vantage_grab = function(response, argument) {
-  if(is.null(response)){
-    return(NULL)
-  }
-  data = content(response, 'text', encoding = "UTF-8")
-  data = fromJSON(data)
-  return(data$argument)
+vantage_lytics = function(symbols, calculations, interval, from, to, api_key) {
+  q = vantage_query(command = "ANALYTICS_FIXED_WINDOW", arguments = list(c("SYMBOLS", paste(as.vector(symbols), collapse = ',')), c("CALCULATIONS", paste(calculations, collapse = ',')), c("INTERVAL", interval), c("RANGE", from), c("RANGE", to)), api_key = api_key)
+  return(q)
+}
+
+vantage_daily = function(symbol, full=FALSE, api_key){
+  q = vantage_query("TIME_sERIES_DAILY", list(c("symbol", symbol), c("outputsize", if (full) "full" else "compact")), api_key)
+  return(q)
+}
+
+vantage_weekly = function(symbol, full=FALSE, api_key){
+  q = vantage_query("TIME_sERIES_WEEKLY", list(c("symbol", symbol)), api_key)
+  return(q)
 }
 
 safe_cbind <- function(df1, df2) {
@@ -128,3 +134,6 @@ currency_finder <- function(){
 # vantage_query('TIME_SERIES_WEEKLY', list(c('symbol', 'GOOG'), c('interval', '30min')), apikey)
 # q = vantage_query('TOP_GAINERS_LOSERS', list(), apikey)
 # vantage_grab(q, 'metadata')
+res = vantage_weekly("GOOG", api_key = apikey)
+data = content(res, "text", encoding = "UTF-8")
+e = fromJSON(data)
