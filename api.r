@@ -46,6 +46,32 @@ from_to_values <- function(base_currency = "usd", start_date = "2024-03-01", end
   return(results)
 }
 
+two_days_values <- function(base_currency = "usd", start_date = "2024-03-01", end_date = "2025-05-13") {
+  plan(multisession, workers = parallel::detectCores() - 1)
+  
+  row1 <- full_api(as.character(start_date), base_currency)
+  row2 <- full_api(as.character(end_date), base_currency)
+  print(dim(row1))
+  print(dim(row2))
+  if (!is.null(row1) && !is.null(row2)) {
+    all_cols <- union(names(row1), names(row2))
+    for (col in setdiff(all_cols, names(row1))) {
+      row1[[col]] <- NA
+    }
+    for (col in setdiff(all_cols, names(row2))) {
+      row2[[col]] <- NA
+    }
+    row1 <- row1[, all_cols, drop = FALSE]
+    row2 <- row2[, all_cols, drop = FALSE]
+    results <- bind_rows(row1, row2)
+  } else {
+    results <- NULL
+  }
+  plan(sequential)
+  
+  return(results)
+}
+
 
 vantage_query = function(command, arguments, api_key) {
   parsed_arguments = paste0("&", sapply(arguments, function(x) paste(x, collapse = "=")), collapse = '')
@@ -107,7 +133,7 @@ short_to_currency <- function(date = "2025-01-01") {
 }
 
 currency_finder <- function(){
-  dates <- seq(as.Date("2024-03-05"), as.Date("2025-05-13"), by=30)
+  dates <- seq(as.Date("2025-05-07"), as.Date("2025-05-13"), by=3)
   print(dates)
   
   # Loop over remaining dates

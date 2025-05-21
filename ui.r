@@ -6,7 +6,7 @@ library(plotly)
 library(ggplot2)
 library(dplyr)
 library(httr)
-source("api.R")
+source("api.r")
 
 # Get list of available currencies
 currency_list <- colnames(currency_finder())
@@ -29,6 +29,9 @@ dashboardPage(
         tabName = "currency",
         icon = icon("dollar-sign")
       ),
+      menuItem("Currency Bull and Bear Movements",
+        tabName = "currency_comparison", 
+        icon = icon("exchange-alt")),
       menuItem("Stocks", tabName = "stocks", icon = icon("chart-line"))
     ),
     # Inputs for Currency tab
@@ -39,18 +42,48 @@ dashboardPage(
         inputId = "base_currency",
         label   = "Choose base currency:",
         choices = currency_list,
-        selected = "USD",
+        selected = "usd",
         options = list(placeholder = "Search…")
       ),
       selectizeInput(
         inputId = "currency",
         label   = "Choose target currency:",
         choices = currency_list,
-        selected = "EUR",
+        selected = "eur",
         options = list(placeholder = "Search…")
       ),
       dateRangeInput(
         inputId = "dateRange",
+        label   = "Select date range:",
+        start   = Sys.Date() - 30,
+        end     = Sys.Date(),
+        min     = "2024-03-01",
+        max     = Sys.Date(),
+        format  = "yyyy-mm-dd",
+        separator = " to "
+      )
+    ),
+    # Inputs for Currency Bull and Bear Movements tab
+    conditionalPanel(
+      "input.tabs == 'currency_comparison'",
+      #hr(),
+      selectizeInput(
+        inputId = "base_currency_bnb",
+        label   = "Choose base currency:",
+        choices = currency_list,
+        selected = "usd",
+        options = list(placeholder = "Search…")
+      ),
+      selectizeInput(
+        inputId = "currencies_bnb",
+        label   = "Choose target currencies:",
+        choices = currency_list,
+        selected = "eur",
+        multiple = TRUE,
+        options = list(placeholder = "Search…")
+      ),
+      dateRangeInput(
+        inputId = "dateRange_bnb",
         label   = "Select date range:",
         start   = Sys.Date() - 30,
         end     = Sys.Date(),
@@ -129,6 +162,48 @@ dashboardPage(
             solidHeader = TRUE,
             width = 12,
             plotlyOutput("currency_plot", height = "400px")
+          )
+        )
+      ),
+      tabItem(
+        tabName = "currency_comparison",
+        fluidRow(
+          box(
+            title = "Currency Bull and Bear Movements",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            collapsible = FALSE,
+            collapsed = FALSE
+          )
+        ),
+        fluidRow(
+          box(
+            width = 6,
+            status = "info",
+            solidHeader = TRUE,
+            verbatimTextOutput("base_currency_bnb_output")
+          ),
+          box(
+            width = 6,
+            status = "info",
+            solidHeader = TRUE,
+            verbatimTextOutput("date_range_bnb_output")
+          ),
+          box(
+            width = 6,
+            status = "info",
+            solidHeader = TRUE,
+            verbatimTextOutput("currencies_bnb_output")
+          )
+        ),
+        fluidRow(
+          box(
+            title = "Currency Performance Comparison",
+            status = "info",
+            solidHeader = TRUE,
+            width = 12,
+            plotlyOutput("bull_bear_plot", height = "400px")
           )
         )
       ),
