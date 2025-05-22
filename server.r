@@ -149,4 +149,12 @@ function(input, output, session) {
         yaxis = list(title = list(text = "", font = list(size = 14)))
       )
   })
+
+  output$currency_converter_output <- renderPrint({
+    req(input$from_currency, input$to_currency, input$amount_to_convert, input$dateInput_converter)
+
+    calculated <- input$amount_to_convert * full_api(input$dateInput_converter, input$from_currency)[[input$to_currency]]
+    paste("Calculated amount:", calculated, input$to_currency)
+
+  })
 }

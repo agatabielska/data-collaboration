@@ -8,12 +8,9 @@ library(dplyr)
 library(httr)
 source("api.r")
 
-# Get list of available currencies
 currency_list <- colnames(currency_finder())
 
-
 theme = create_theme(adminlte_color(light_blue = "#006288"))
-
 
 dashboardPage(
   skin = "black",
@@ -26,18 +23,21 @@ dashboardPage(
       id = "tabs",
       menuItem(
         "Currency",
-        tabName = "currency",
-        icon = icon("dollar-sign")
+        tabName = "currency_main",
+        icon = icon("dollar-sign"),
+        menuSubItem("Exchange Rates", tabName = "currency", icon = icon("chart-line")),
+        menuSubItem("Bull and Bear Movements", tabName = "currency_comparison", icon = icon("exchange-alt")),
+        menuSubItem("Currency Converter", tabName = "currency_converter", icon = icon("calculator"))
       ),
-      menuItem("Currency Bull and Bear Movements",
-        tabName = "currency_comparison", 
-        icon = icon("exchange-alt")),
-      menuItem("Stocks", tabName = "stocks", icon = icon("chart-line"))
+      menuItem("Stocks", 
+        tabName = "stocks_main", 
+        icon = icon("chart-line"),
+        menuSubItem("Stock Overview", tabName = "stocks", icon = icon("chart-line")),
+        menuSubItem("Stock Comparison", tabName = "stocks_comparison", icon = icon("balance-scale"))
+      )
     ),
-    # Inputs for Currency tab
     conditionalPanel(
       "input.tabs == 'currency'",
-      #hr(),
       selectizeInput(
         inputId = "base_currency",
         label   = "Choose base currency:",
@@ -63,10 +63,8 @@ dashboardPage(
         separator = " to "
       )
     ),
-    # Inputs for Currency Bull and Bear Movements tab
     conditionalPanel(
       "input.tabs == 'currency_comparison'",
-      #hr(),
       selectizeInput(
         inputId = "base_currency_bnb",
         label   = "Choose base currency:",
@@ -93,10 +91,38 @@ dashboardPage(
         separator = " to "
       )
     ),
-    # Inputs for Stocks tab
+    conditionalPanel(
+      "input.tabs == 'currency_converter'",
+      selectizeInput(
+        inputId = "from_currency",
+        label   = "From currency:",
+        choices = currency_list,
+        selected = "usd",
+        options = list(placeholder = "Search…")
+      ),
+      selectizeInput(
+        inputId = "to_currency",
+        label   = "To currency:",
+        choices = currency_list,
+        selected = "eur",
+        options = list(placeholder = "Search…")
+      ),
+      numericInput(
+        inputId = "amount_to_convert",
+        label   = "Amount:",
+        value   = 1,
+        min     = 0
+      ),
+      dateInput(
+        inputId = "dateInput_converter",
+        label   = "Select date:",
+        min     = "2024-03-01",
+        max     = Sys.Date(),
+        format  = "yyyy-mm-dd"
+      )
+    ),
     conditionalPanel(
       "input.tabs == 'stocks'",
-      #hr(),
       textInput(
         inputId = "stock_symbol",
         label   = "Stock Symbol:",
@@ -110,11 +136,28 @@ dashboardPage(
         format  = "yyyy-mm-dd",
         separator = " to "
       )
+    ),
+    conditionalPanel(
+      "input.tabs == 'stocks_comparison'",
+      selectizeInput(
+        inputId = "stock_symbols",
+        label   = "Stock Symbols (comma-separated):",
+        choices = NULL,
+        multiple = TRUE,
+        options = list(placeholder = "AAPL, MSFT, GOOGL")
+      ),
+      dateRangeInput(
+        inputId = "stocks_comparison_dateRange",
+        label   = "Select date range:",
+        start   = Sys.Date() - 30,
+        end     = Sys.Date(),
+        format  = "yyyy-mm-dd",
+        separator = " to "
+      )
     )
   ),
   
   dashboardBody(
-    # set light grey background
     tags$style(
       HTML(
         ".content-wrapper, .right-side { background-color: #006288; }"
@@ -122,7 +165,6 @@ dashboardPage(
     ),
     
     tabItems(
-      # Currency Tab Content
       tabItem(
         tabName = "currency",
         fluidRow(
@@ -207,37 +249,73 @@ dashboardPage(
           )
         )
       ),
-      
-      # Stocks Tab Content
-      tabItem(tabName = "stocks", fluidRow(
-        box(
-          title = "Stock Dashboard",
-          status = "primary",
-          solidHeader = TRUE,
-          width = 12
+      tabItem(
+        tabName = "currency_converter",
+        fluidRow(
+          box(
+            title = "Currency Converter",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            collapsible = FALSE,
+            collapsed = FALSE,
+            verbatimTextOutput("currency_converter_output")
+          )
         )
-      ), fluidRow(
-        box(
-          width = 6,
-          status = "info",
-          solidHeader = TRUE,
-          verbatimTextOutput("stock_symbol_output")
+      ),
+      tabItem(
+        tabName = "stocks",
+        fluidRow(
+          box(
+            title = "Stock Dashboard",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12
+          )
+        ), 
+        fluidRow(
+          box(
+            width = 6,
+            status = "info",
+            solidHeader = TRUE,
+            verbatimTextOutput("stock_symbol_output")
+          ),
+          box(
+            width = 6,
+            status = "info",
+            solidHeader = TRUE,
+            verbatimTextOutput("stock_date_output")
+          )
+        ), 
+        fluidRow(
+          box(
+            title = "Stock Price Plot",
+            status = "info",
+            solidHeader = TRUE,
+            width = 12,
+            plotlyOutput("stock_plot", height = "400px")
+          )
+        )
+      ),
+      tabItem(
+        tabName = "stocks_comparison",
+        fluidRow(
+          box(
+            title = "Stock Comparison",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12
+          )
         ),
-        box(
-          width = 6,
-          status = "info",
-          solidHeader = TRUE,
-          verbatimTextOutput("stock_date_output")
+        fluidRow(
+          box(
+            width = 12,
+            status = "info",
+            solidHeader = TRUE,
+            plotlyOutput("stock_comparison_plot", height = "400px")
+          )
         )
-      ), fluidRow(
-        box(
-          title = "Stock Price Plot",
-          status = "info",
-          solidHeader = TRUE,
-          width = 12,
-          plotlyOutput("stock_plot", height = "400px")
-        )
-      ))
+      )
     )
   )
 )
