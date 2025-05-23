@@ -5,8 +5,9 @@ library(jsonlite)
 library(dplyr)
 library(future)
 library(furrr)
+library(plotly)
 
-apikey = '99RHTNDE9YD9TMOW'
+apikey =plotlyapikey = '99RHTNDE9YD9TMOW'
 
 full_api <- function(date="latest", base_currency="usd") {
   url <- sprintf("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@%s/v1/currencies/%s.json", date, base_currency)
@@ -95,10 +96,12 @@ vantage_daily = function(symbol, full=FALSE, api_key){
   return(q)
 }
 
-vantage_weekly = function(symbol, full=FALSE, api_key){
+vantage_weekly = function(symbol, api_key){
   q = vantage_query("TIME_sERIES_WEEKLY", list(c("symbol", symbol)), api_key)
   return(q)
 }
+
+
 
 safe_cbind <- function(df1, df2) {
   if (!is.data.frame(df2)) {
@@ -148,6 +151,40 @@ currency_finder <- function(){
   return(data)
 }
 
+unpack = function(list){
+  return(unlist(list, use.names = FALSE))
+}
+
+vantage_weekly_plot = function(symbol, n = 80, api_key){
+  res = vantage_weekly(symbol, api_key = apikey)
+  if(is.null(res)){
+    return(NULL)
+  }
+  data = fromJSON(content(res, "text", encoding = "UTF-8"))
+  wts = data$`Weekly Time Series`
+  wts = do.call(rbind, wts)
+  wts = as.data.frame(wts)
+  wts = data.frame(Date = as.Date(rownames(wts)), Open = unpack(wts$`1. open`), High = unpack(wts$`2. high`), Low = unpack(wts$`3. low`), Close = unpack(wts$`4. close`), Volume = unpack(wts$`5. volume`))
+  fig = head(wts, n) %>% plot_ly(x = ~Date, type="candlestick", open = ~Open, close = ~Close, high = ~High, low = ~Low) 
+  fig = fig %>% layout(title = paste("Candlestick chart of", symbol), xaxis=list(tickangle=45))
+  return(fig)
+}
+
+vantage_daily_plot = function(symbol, n = 80, api_key){
+  res = vantage_daily(symbol, api_key = apikey)
+  if(is.null(res)){
+    return(NULL)
+  }
+  data = fromJSON(content(res, "text", encoding = "UTF-8"))
+  wts = data$`Time Series (Daily)`
+  wts = do.call(rbind, wts)
+  wts = as.data.frame(wts)
+  wts = data.frame(Date = as.Date(rownames(wts)), Open = unpack(wts$`1. open`), High = unpack(wts$`2. high`), Low = unpack(wts$`3. low`), Close = unpack(wts$`4. close`), Volume = unpack(wts$`5. volume`))
+  fig = head(wts, n) %>% plot_ly(x = ~Date, type="candlestick", open = ~Open, close = ~Close, high = ~High, low = ~Low) 
+  fig = fig %>% layout(title = paste("Candlestick chart of", symbol), xaxis=list(tickangle=45))
+  return(fig)
+}
+
 # colnames(short_to_currency("2024-03-06"))
 
 # currency_transformer <- currency_finder()
@@ -160,6 +197,4 @@ currency_finder <- function(){
 # vantage_query('TIME_SERIES_WEEKLY', list(c('symbol', 'GOOG'), c('interval', '30min')), apikey)
 # q = vantage_query('TOP_GAINERS_LOSERS', list(), apikey)
 # vantage_grab(q, 'metadata')
-res = vantage_weekly("GOOG", api_key = apikey)
-data = content(res, "text", encoding = "UTF-8")
-e = fromJSON(data)
+# vantage_daily_plot("GOOG", api_key = apikey)
