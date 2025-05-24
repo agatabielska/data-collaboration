@@ -3,6 +3,8 @@ library(ggplot2)
 
 source("api.r")
 
+apikey = plotlyapikey = '99RHTNDE9YD9TMOW'
+
 function(input, output, session) {
   output$base_currency_output <- renderPrint({
     req(input$base_currency)
@@ -156,5 +158,24 @@ function(input, output, session) {
     calculated <- input$amount_to_convert * full_api(input$dateInput_converter, input$from_currency)[[input$to_currency]]
     paste("Calculated amount:", calculated, input$to_currency)
 
+  })
+  
+  output$stock_symbol_output = renderPrint({
+    req(input$stock_symbol)
+    
+    paste("Selected symbol:", input$stock_symbol)
+  })
+  
+  output$stock_date_output = renderPrint({
+    req(input$stock_dateRange)
+    
+    paste("Selected range:", input$stock_dateRange[1], "to", input$stock_dateRange[2])
+  })
+  
+  output$stock_plot = renderPlotly({
+    req(input$stock_symbol, input$stock_dateRange)
+    
+    #vantage_daily_plot(input$stock_symbol, TRUE, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
+    vantage_weekly_plot(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
   })
 }

@@ -7,7 +7,7 @@ library(future)
 library(furrr)
 library(plotly)
 
-apikey =plotlyapikey = '99RHTNDE9YD9TMOW'
+apikey = plotlyapikey = '99RHTNDE9YD9TMOW'
 
 full_api <- function(date="latest", base_currency="usd") {
   url <- sprintf("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@%s/v1/currencies/%s.json", date, base_currency)
@@ -155,7 +155,7 @@ unpack = function(list){
   return(unlist(list, use.names = FALSE))
 }
 
-vantage_weekly_plot = function(symbol, n = 80, api_key){
+vantage_weekly_plot = function(symbol, from, to, api_key){
   res = vantage_weekly(symbol, api_key = apikey)
   if(is.null(res)){
     return(NULL)
@@ -165,13 +165,14 @@ vantage_weekly_plot = function(symbol, n = 80, api_key){
   wts = do.call(rbind, wts)
   wts = as.data.frame(wts)
   wts = data.frame(Date = as.Date(rownames(wts)), Open = unpack(wts$`1. open`), High = unpack(wts$`2. high`), Low = unpack(wts$`3. low`), Close = unpack(wts$`4. close`), Volume = unpack(wts$`5. volume`))
-  fig = head(wts, n) %>% plot_ly(x = ~Date, type="candlestick", open = ~Open, close = ~Close, high = ~High, low = ~Low) 
+  wts = wts %>% filter(between(Date, as.Date(from), as.Date(to)))
+  fig = wts %>% plot_ly(x = ~Date, type="candlestick", open = ~Open, close = ~Close, high = ~High, low = ~Low) 
   fig = fig %>% layout(title = paste("Candlestick chart of", symbol), xaxis=list(tickangle=45))
   return(fig)
 }
 
-vantage_daily_plot = function(symbol, n = 80, api_key){
-  res = vantage_daily(symbol, api_key = apikey)
+vantage_daily_plot = function(symbol, full = FALSE, from, to, api_key){
+  res = vantage_daily(symbol, full, api_key = apikey)
   if(is.null(res)){
     return(NULL)
   }
@@ -180,9 +181,16 @@ vantage_daily_plot = function(symbol, n = 80, api_key){
   wts = do.call(rbind, wts)
   wts = as.data.frame(wts)
   wts = data.frame(Date = as.Date(rownames(wts)), Open = unpack(wts$`1. open`), High = unpack(wts$`2. high`), Low = unpack(wts$`3. low`), Close = unpack(wts$`4. close`), Volume = unpack(wts$`5. volume`))
-  fig = head(wts, n) %>% plot_ly(x = ~Date, type="candlestick", open = ~Open, close = ~Close, high = ~High, low = ~Low) 
+  wts = wts %>% filter(between(Date, as.Date(from), as.Date(to)))
+  fig = wts %>% plot_ly(x = ~Date, type="candlestick", open = ~Open, close = ~Close, high = ~High, low = ~Low) 
   fig = fig %>% layout(title = paste("Candlestick chart of", symbol), xaxis=list(tickangle=45))
   return(fig)
+}
+
+vantage_symbols = function(){
+  url = "https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=demo"
+  symbols_df = read.csv(url)
+  return(symbols_df$symbol)
 }
 
 # colnames(short_to_currency("2024-03-06"))
@@ -198,3 +206,4 @@ vantage_daily_plot = function(symbol, n = 80, api_key){
 # q = vantage_query('TOP_GAINERS_LOSERS', list(), apikey)
 # vantage_grab(q, 'metadata')
 # vantage_daily_plot("GOOG", api_key = apikey)
+vantage_symbols()
