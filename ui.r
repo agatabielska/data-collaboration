@@ -123,10 +123,12 @@ dashboardPage(
     ),
     conditionalPanel(
       "input.tabs == 'stocks'",
-      textInput(
+      selectizeInput(
         inputId = "stock_symbol",
-        label   = "Stock Symbol:",
-        value   = "AAPL"
+        label   = "Stock symbol:",
+        choices = vantage_symbols(),
+        selected = "AAPL",
+        options = list(placeholder = "Search…")
       ),
       dateRangeInput(
         inputId = "stock_dateRange",
@@ -135,6 +137,13 @@ dashboardPage(
         end     = Sys.Date(),
         format  = "yyyy-mm-dd",
         separator = " to "
+      ),
+      selectizeInput(
+        inputId = "stock_interval",
+        label   = "Choose interval:",
+        choices = c('1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month'),
+        selected = "1day",
+        options = list(placeholder = "Search…")
       )
     ),
     conditionalPanel(
@@ -275,16 +284,22 @@ dashboardPage(
         ), 
         fluidRow(
           box(
-            width = 6,
+            width = 4,
             status = "info",
             solidHeader = TRUE,
             verbatimTextOutput("stock_symbol_output")
           ),
           box(
-            width = 6,
+            width = 4,
             status = "info",
             solidHeader = TRUE,
             verbatimTextOutput("stock_date_output")
+          ),
+          box(
+            width = 4,
+            status = "info",
+            solidHeader = TRUE,
+            verbatimTextOutput("stock_interval_output")
           )
         ), 
         fluidRow(

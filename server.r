@@ -4,6 +4,7 @@ library(ggplot2)
 source("api.r")
 
 apikey = plotlyapikey = '99RHTNDE9YD9TMOW'
+twelve_apikey = '6abb374eb01c45979b59e87327fed240'
 
 function(input, output, session) {
   output$base_currency_output <- renderPrint({
@@ -168,14 +169,21 @@ function(input, output, session) {
   
   output$stock_date_output = renderPrint({
     req(input$stock_dateRange)
-    
+
     paste("Selected range:", input$stock_dateRange[1], "to", input$stock_dateRange[2])
   })
   
+  output$stock_interval_output = renderPrint({
+    req(input$stock_interval)
+    
+    paste("Selected interval:", input$stock_interval)
+  })
+  
   output$stock_plot = renderPlotly({
-    req(input$stock_symbol, input$stock_dateRange)
+    req(input$stock_symbol, input$stock_dateRange, input$stock_interval)
     
     #vantage_daily_plot(input$stock_symbol, TRUE, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
-    vantage_weekly_plot(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
+    #vantage_weekly_plot(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
+    twelve_candle(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], input$stock_interval, api_key = twelve_apikey)
   })
 }

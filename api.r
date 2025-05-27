@@ -6,8 +6,10 @@ library(dplyr)
 library(future)
 library(furrr)
 library(plotly)
+library(lubridate)
 
 apikey = plotlyapikey = '99RHTNDE9YD9TMOW'
+twelve_apikey = '6abb374eb01c45979b59e87327fed240'
 
 full_api <- function(date="latest", base_currency="usd") {
   url <- sprintf("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@%s/v1/currencies/%s.json", date, base_currency)
@@ -193,6 +195,24 @@ vantage_symbols = function(){
   return(symbols_df$symbol)
 }
 
+twelve_candle = function(symbol, from, to, interval = '1day', api_key){
+  time_diff = as.numeric(difftime(to, from, units = "days"))
+  
+
+  timezone = 'Europe/Warsaw'
+  url = paste0('https://api.twelvedata.com/heikinashicandles?symbol=', symbol, '&interval=', interval, '&start_date=', from, '&end_date=', to, '&timezone=', timezone, '&apikey=', api_key)
+  res = GET(url)
+  data = fromJSON(content(res, "text", encoding = "UTF-8"))
+  if(data$status != "ok"){
+    return(NULL)
+  }
+  df = data.frame(data$values)
+  df = df %>% mutate(datetime = parse_date_time(datetime, orders = c("ymd", "ymd HMS")))
+  fig = df %>% plot_ly(x = ~datetime, type="candlestick", open = ~heikinopens, close = ~heikincloses, high = ~heikinhighs, low = ~heikinlows) 
+  fig = fig %>% layout(title = paste("Candlestick chart of", symbol), xaxis=list(title="Time", tickangle=45))
+  return(fig)
+}
+
 # colnames(short_to_currency("2024-03-06"))
 
 # currency_transformer <- currency_finder()
@@ -206,4 +226,4 @@ vantage_symbols = function(){
 # q = vantage_query('TOP_GAINERS_LOSERS', list(), apikey)
 # vantage_grab(q, 'metadata')
 # vantage_daily_plot("GOOG", api_key = apikey)
-vantage_symbols()
+#twelve_candle('AAPL', as.Date('2024-05-23'), as.Date('2025-05-26'), twelve_apikey)
