@@ -1,0 +1,34 @@
+.skin-black .main-header .navbar {
+    background-color: #101111;
+}
+
+.skin-black .main-header>.logo {
+    color: #dcdddd;
+    border-bottom: 0 solid transparent;
+    border-right: 1px solid #080808;
+    background-color: #101111;
+}
+
+/* .skin-black .main-header .navbar .sidebar-toggle {
+    color: #dcdddd;
+}
+
+.skin-black .main-header .navbar>.sidebar-toggle {
+    border-right: 1px solid #080808;
+} */
+
+.skin-black .main-header .navbar>.sidebar-toggle {
+    color: #dcdddd !important;
+    border-right: 1px solid #080808 !important;
+}
+
+.sidebar-toggle:hover {
+  background-color: #25be76 !important;  /* new hover background color */
+  color: white !important;               /* new hover icon/text color */
+}
+
+.logo:hover {
+  background-color: #25be76 !important;
+  color: white !important;               /* new hover icon/text color */
+}
+

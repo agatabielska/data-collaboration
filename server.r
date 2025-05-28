@@ -1,5 +1,16 @@
 library(plotly)
+library(webshot2)
+library(promises)
+library(future)
+plan(multisession)
+library(htmlwidgets)
 library(ggplot2)
+library(slickR)
+library(htmltools)
+
+# Should return TRUE
+
+
 
 source("api.r")
 
@@ -54,7 +65,7 @@ function(input, output, session) {
     
     # Create the plot
     p <- ggplot(currency_data, aes(x = date, y = value)) +
-      geom_line(color = "blue", size = 1) +
+      geom_line(color = "blue", linewidth = 1) +
       labs(
         title = paste("Exchange Rate:", base_currency, "to", chosen_currency), 
         y = "Value", 
@@ -186,6 +197,100 @@ function(input, output, session) {
     #vantage_weekly_plot(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
     twelve_candle(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], input$stock_interval, api_key = twelve_apikey)
   })
+
+  output$currencyTicker <- renderSlickR({
+
+  today <- format(Sys.Date(), "%Y-%m-%d")
+  yesterday <- format(Sys.Date() - 1, "%Y-%m-%d")
+
+  chosen_currencies <- c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr", "rub")
+  
+  currency_data_list <- two_days_values("usd", today, yesterday)
+  req(currency_data_list)
+  
+  all_cols <- names(currency_data_list)
+  currency_cols <- if(all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
+  
+  currency_items <- c()
+  
+  for (col in currency_cols) {
+    if (!(col %in% chosen_currencies)) {
+      next 
+    }
+    yesterday_val <- as.numeric(currency_data_list[1, col])
+    today_val <- as.numeric(currency_data_list[2, col])
+    
+    if (!is.na(yesterday_val) && !is.na(today_val) && yesterday_val != 0) {
+      change <- ((today_val / yesterday_val) - 1) * 100
+      color <- ifelse(change > 0, "#28a745", "#dc3545")
+      color <- ifelse(change == 0, "#666", color)
+      arrow <- ifelse(change > 0, "▲", "▼")
+      arrow <- ifelse(change == 0, "-", arrow)
+      
+      html_item <- sprintf(
+        '<div style="text-align: center; padding: 0 20px; font-family: Arial, sans-serif;">
+          <div style="font-weight: bold; font-size: 16px;">%s/USD</div>
+          <div style="color: %s; font-size: 14px;">%s %.2f%%</div>
+          <div style="color: #666; font-size: 18px; font-weight: 500;">%.4f</div>
+        </div>',
+        toupper(col), color, arrow, abs(change), today_val
+      )
+      tmp_dir <- '/tmp'
+      html_file <- file.path(tmp_dir, paste0("currency_", col, ".html"))
+      img_file  <- file.path(tmp_dir, paste0("currency_", col, ".png"))
+      htmltools::save_html(HTML(html_item), html_file)
+      webshot2::webshot(html_file, img_file, vwidth = 250, vheight = 100)
+      
+      currency_items <- c(currency_items, img_file)
+    }
+  }
+  
+  if (length(currency_items) == 0) {
+    return(HTML('<div style="text-align: center; padding: 20px; color: #666;">No currency data available.</div>'))
+  }
+  
+  slickR(
+    obj = currency_items,
+    slideId = "currencySlider",
+    height = 80,
+    width = "100%",
+    objLinks = "character"
+  ) + 
+  settings(
+    dots = FALSE,
+    infinite = TRUE,
+    slidesToShow = 6,
+    slidesToScroll = 1,
+    autoplay = TRUE,
+    autoplaySpeed = 3000,
+    arrows = FALSE,
+    pauseOnHover = TRUE,
+    responsive = JS(
+      "
+      function(slick) {
+        var updateSlidesToShow = function() {
+          var width = window.innerWidth;
+          var slidesToShow = 6;
+          if (width < 576) {
+        slidesToShow = 2;
+          } else if (width < 768) {
+        slidesToShow = 3;
+          } else if (width < 992) {
+        slidesToShow = 4;
+          } else if (width < 1200) {
+        slidesToShow = 5;
+          }
+          slick.slickSetOption('slidesToShow', slidesToShow, true);
+        };
+        updateSlidesToShow();
+        window.addEventListener('resize', function() {
+          updateSlidesToShow();
+        });
+      }
+      "
+        )
+  )
+})
   
   output$stock_comparison_plot = renderPlotly({
     req(input$stock_symbols, input$stocks_comparison_dateRange, input$stock_comparison_interval)
