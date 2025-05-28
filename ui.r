@@ -143,7 +143,7 @@ dashboardPage(
         label   = "Choose interval:",
         choices = c('1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month'),
         selected = "1day",
-        options = list(placeholder = "Search…")
+        options = list(placeholder = "Search...")
       )
     ),
     conditionalPanel(
@@ -151,9 +151,9 @@ dashboardPage(
       selectizeInput(
         inputId = "stock_symbols",
         label   = "Stock Symbols (comma-separated):",
-        choices = NULL,
+        choices = vantage_symbols(),
         multiple = TRUE,
-        options = list(placeholder = "AAPL, MSFT, GOOGL")
+        options = list(placeholder = "Search...")
       ),
       dateRangeInput(
         inputId = "stocks_comparison_dateRange",
@@ -162,6 +162,13 @@ dashboardPage(
         end     = Sys.Date(),
         format  = "yyyy-mm-dd",
         separator = " to "
+      ),
+      selectizeInput(
+        inputId = "stock_comparison_interval",
+        label   = "Choose interval:",
+        choices = c('1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month'),
+        selected = "1day",
+        options = list(placeholder = "Search...")
       )
     )
   ),

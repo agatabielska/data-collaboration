@@ -186,4 +186,10 @@ function(input, output, session) {
     #vantage_weekly_plot(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
     twelve_candle(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], input$stock_interval, api_key = twelve_apikey)
   })
+  
+  output$stock_comparison_plot = renderPlotly({
+    req(input$stock_symbols, input$stocks_comparison_dateRange, input$stock_comparison_interval)
+    
+    twelve_compare(input$stock_symbols, input$stocks_comparison_dateRange[1], input$stocks_comparison_dateRange[2], input$stock_comparison_interval, api_key = twelve_apikey)
+  })
 }
