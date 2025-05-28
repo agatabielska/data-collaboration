@@ -6,6 +6,7 @@ library(plotly)
 library(ggplot2)
 library(dplyr)
 library(httr)
+library(slickR)
 source("api.r")
 
 currency_list <- colnames(currency_finder())
@@ -331,6 +332,10 @@ dashboardPage(
           )
         )
       )
+    ),
+    tags$div(
+      style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-top: 1px solid #dee2e6; padding: 10px 0;",
+      slickROutput("currencyTicker", height = "60px")
     )
   )
 )
