@@ -8,7 +8,6 @@ library(ggplot2)
 library(slickR)
 library(htmltools)
 
-install.packages("webshot2")
 # Should return TRUE
 
 
@@ -199,109 +198,97 @@ function(input, output, session) {
     twelve_candle(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], input$stock_interval, api_key = twelve_apikey)
   })
 
-  # Fixed currency ticker
-    # reactive value to hold image paths
-  currencyImages <- reactiveVal(character())
-
-  # reactive timer to poll for new images
-  currencyUpdateTimer <- reactiveTimer(5000)
-
   output$currencyTicker <- renderSlickR({
-  currencyUpdateTimer()  # triggers rerun every few seconds
 
   today <- format(Sys.Date(), "%Y-%m-%d")
   yesterday <- format(Sys.Date() - 1, "%Y-%m-%d")
 
+  chosen_currencies <- c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr", "rub")
+  
   currency_data_list <- two_days_values("usd", today, yesterday)
   req(currency_data_list)
-
+  
   all_cols <- names(currency_data_list)
-  currency_cols <- if (all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
-
-  tmp_dir <- tempdir()
-  use_initial <- length(currencyImages()) == 0
-  img_paths <- c()
-
-  create_card_image <- function(col) {
+  currency_cols <- if(all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
+  
+  currency_items <- c()
+  
+  for (col in currency_cols) {
+    if (!(col %in% chosen_currencies)) {
+      next 
+    }
     yesterday_val <- as.numeric(currency_data_list[1, col])
     today_val <- as.numeric(currency_data_list[2, col])
+    
     if (!is.na(yesterday_val) && !is.na(today_val) && yesterday_val != 0) {
       change <- ((today_val / yesterday_val) - 1) * 100
       color <- ifelse(change > 0, "#28a745", "#dc3545")
+      color <- ifelse(change == 0, "#666", color)
       arrow <- ifelse(change > 0, "▲", "▼")
+      arrow <- ifelse(change == 0, "-", arrow)
+      
       html_item <- sprintf(
-        '<div style="width:200px; height:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family: Arial, sans-serif;">
+        '<div style="text-align: center; padding: 0 20px; font-family: Arial, sans-serif;">
           <div style="font-weight: bold; font-size: 16px;">%s/USD</div>
           <div style="color: %s; font-size: 14px;">%s %.2f%%</div>
           <div style="color: #666; font-size: 18px; font-weight: 500;">%.4f</div>
         </div>',
         toupper(col), color, arrow, abs(change), today_val
       )
+      tmp_dir <- '/tmp'
       html_file <- file.path(tmp_dir, paste0("currency_", col, ".html"))
       img_file  <- file.path(tmp_dir, paste0("currency_", col, ".png"))
-      full_html <- htmltools::tags$html(
-        htmltools::tags$head(),
-        htmltools::tags$body(htmltools::HTML(html_item))
-      )
-      htmltools::save_html(full_html, html_file)
+      htmltools::save_html(HTML(html_item), html_file)
       webshot2::webshot(html_file, img_file, vwidth = 250, vheight = 100)
-      return(img_file)
+      
+      currency_items <- c(currency_items, img_file)
     }
-    return(NULL)
   }
-
-  if (use_initial) {
-    # generate first 6 immediately
-    first_batch <- head(currency_cols, 6)
-    for (col in first_batch) {
-      img <- create_card_image(col)
-      if (!is.null(img)) img_paths <- c(img_paths, img)
-    }
-
-    currencyImages(img_paths)  # save for future renders
-
-    # background rendering of rest
-    remaining <- setdiff(currency_cols, first_batch)
-    if (length(remaining) > 0) {
-      future({
-        future_paths <- c()
-        for (col in remaining) {
-          img <- create_card_image(col)
-          if (!is.null(img)) future_paths <- c(future_paths, img)
-        }
-        future_paths
-      }) %...>% {
-        isolate({
-          currencyImages(c(currencyImages(), .))
-        })
+  
+  if (length(currency_items) == 0) {
+    return(HTML('<div style="text-align: center; padding: 20px; color: #666;">No currency data available.</div>'))
+  }
+  
+  slickR(
+    obj = currency_items,
+    slideId = "currencySlider",
+    height = 80,
+    width = "100%",
+    objLinks = "character"
+  ) + 
+  settings(
+    dots = FALSE,
+    infinite = TRUE,
+    slidesToShow = 6,
+    slidesToScroll = 1,
+    autoplay = TRUE,
+    autoplaySpeed = 3000,
+    arrows = FALSE,
+    pauseOnHover = TRUE,
+    responsive = JS(
+      "
+      function(slick) {
+        var updateSlidesToShow = function() {
+          var width = window.innerWidth;
+          var slidesToShow = 6;
+          if (width < 576) {
+        slidesToShow = 2;
+          } else if (width < 768) {
+        slidesToShow = 3;
+          } else if (width < 992) {
+        slidesToShow = 4;
+          } else if (width < 1200) {
+        slidesToShow = 5;
+          }
+          slick.slickSetOption('slidesToShow', slidesToShow, true);
+        };
+        updateSlidesToShow();
+        window.addEventListener('resize', function() {
+          updateSlidesToShow();
+        });
       }
-    }
-
-    # ⬅️ return carousel immediately with first 6
-    slickR(img_paths, slideId = "currencySlider", height = 80, width = "100%") +
-      settings(
-        dots = FALSE, infinite = TRUE, slidesToShow = 6, slidesToScroll = 1,
-        autoplay = TRUE, autoplaySpeed = 3000, arrows = FALSE, pauseOnHover = TRUE,
-        responsive = htmlwidgets::JS('[
-          { "breakpoint": 1200, "settings": { "slidesToShow": 5 } },
-          { "breakpoint": 992,  "settings": { "slidesToShow": 4 } },
-          { "breakpoint": 768,  "settings": { "slidesToShow": 3 } },
-          { "breakpoint": 576,  "settings": { "slidesToShow": 2 } }
-        ]')
-      )
-  } else {
-    # on later renders, use full updated image list
-    slickR(currencyImages(), slideId = "currencySlider", height = 80, width = "100%") +
-      settings(
-        dots = FALSE, infinite = TRUE, slidesToShow = 6, slidesToScroll = 1,
-        autoplay = TRUE, autoplaySpeed = 3000, arrows = FALSE, pauseOnHover = TRUE,
-        responsive = htmlwidgets::JS('[
-          { "breakpoint": 1200, "settings": { "slidesToShow": 5 } },
-          { "breakpoint": 992,  "settings": { "slidesToShow": 4 } },
-          { "breakpoint": 768,  "settings": { "slidesToShow": 3 } },
-          { "breakpoint": 576,  "settings": { "slidesToShow": 2 } }
-        ]')
-      )
-  }
+      "
+        )
+  )
 })
 }
