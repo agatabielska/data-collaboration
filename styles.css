@@ -18,17 +18,134 @@
 } */
 
 .skin-black .main-header .navbar>.sidebar-toggle {
-    color: #dcdddd !important;
+    color: #dcdddd;
     border-right: 1px solid #080808 !important;
 }
 
 .sidebar-toggle:hover {
   background-color: #25be76 !important;  /* new hover background color */
-  color: white !important;               /* new hover icon/text color */
+  color: #101111 !important;               /* new hover icon/text color */
 }
 
 .logo:hover {
   background-color: #25be76 !important;
-  color: white !important;               /* new hover icon/text color */
+  color: #101111 !important;               /* new hover icon/text color */
 }
 
+.content-wrapper {
+    background-color: #101111;
+}
+
+.content-wrapper, .right-side {
+    background-color: #101111 !important;
+}
+
+section#sidebarItemExpanded {
+    background-color: #101111;
+}
+
+a[href="#shiny-tab-currency_main"]:hover {
+  background-color: #25be76 !important;
+  color: #101111 !important;
+}
+
+a[href="#shiny-tab-stocks_main"]:hover {
+  background-color: #25be76 !important;
+  color: #101111 !important;
+}
+
+.skin-black .left-side, .skin-black .main-sidebar, .skin-black .wrapper {
+    background-color: #101111;
+}
+
+.skin-black .sidebar-menu>li.active>a, .skin-black .sidebar-menu>li:hover>a {
+    color: #fff;
+    background: #181919;
+    border-left-color: #25be76;
+}
+
+
+a[href^="#shiny-tab-"][data-toggle="tab"] {
+  color: #dcdddd;
+  background-color: #181919;
+}
+
+div[class="box-header"] {
+  background-color:#25be76 !important;
+  color: #101111 !important;
+  border: 1px solid #3bc584 !important; 
+  border-radius: 2px;
+}
+
+
+.box {
+    background-color: #202222;
+    border: 1px solid #101111 !important;
+}
+
+pre {
+    display: block;
+    padding: 3px;
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.42857143;
+    color: #dcdddd;
+    word-break: break-all;
+    word-wrap: break-word;
+    background-color: #202222;
+    border: 0px solid #ccc;
+    border-radius: 4px;
+}
+
+.selectize-input.full {
+    background-color: #25be76;
+    border: 0px;
+}
+
+.selectize-dropdown, .selectize-dropdown.form-control {
+    background-color: #25be76;
+    border: 0px;
+}
+
+.selectize-input, .selectize-control.single .selectize-input.input-active {
+    background: #25be76;
+    border: 0px;
+}
+
+.selectize-dropdown, .selectize-input, .selectize-input input {
+    color: #101111;
+}
+
+div.option.selected {
+  background-color: #101111 !important; 
+  color: #dcdddd !important;
+}
+
+div.option.active {
+    background-color: #101111 !important; /* example: blue background */
+    color: #dcdddd !important;
+}
+
+.selectize-dropdown-content {
+  scrollbar-width: thin;              /* Firefox */
+  scrollbar-color: #101111 transparent;
+}
+
+.selectize-dropdown-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.selectize-dropdown-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.selectize-dropdown-content::-webkit-scrollbar-thumb {
+  background-color: #101111;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.selectize-dropdown-content::-webkit-scrollbar-thumb:hover {
+  background-color: #101111;
+}

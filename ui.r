@@ -174,13 +174,14 @@ dashboardPage(
     ),
     tags$style(
       HTML(
-        ".content-wrapper, .right-side { background-color: #006288; }"
+        ".content-wrapper, .right-side { background-color: #101111; }"
       )
     ),
     
     tabItems(
       tabItem(
         tabName = "currency",
+        class = "currency-tab",
         fluidRow(
           box(
             title = "Currency Exchange Information",
