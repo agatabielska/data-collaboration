@@ -7,10 +7,7 @@ library(htmlwidgets)
 library(ggplot2)
 library(slickR)
 library(htmltools)
-
-# Should return TRUE
-
-
+library(shinyBS)
 
 source("api.r")
 long_curr_names <- short_to_currency()
@@ -19,6 +16,34 @@ apikey = plotlyapikey = '99RHTNDE9YD9TMOW'
 twelve_apikey = '6abb374eb01c45979b59e87327fed240'
 
 function(input, output, session) {
+
+  ticker_base_currency <- reactiveVal("usd")
+  ticker_display_currencies <- reactiveVal(c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr"))
+
+  observeEvent(input$saveSettings, {
+    display_currencies <- display_currencies[display_currencies != base_currency]
+    
+    if (length(display_currencies) == 0) {
+      showNotification("Please select at least one currency to display!", type = "warning", duration = 5)
+      return()
+    }
+    
+    ticker_base_currency(base_currency)
+    ticker_display_currencies(display_currencies)
+    toggleModal(session, "settingsModal", toggle = "close")
+    showNotification(paste("Ticker settings updated! Showing", length(display_currencies), "currencies against", toupper(base_currency)), type = "message", duration = 3)
+  })
+
+  observeEvent(input$resetDefaults, {
+    updateSelectizeInput(session, "ticker_base_currency", selected = "usd")
+    updateSelectizeInput(session, "ticker_display_currencies", selected = c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr"))
+  })
+
+  observeEvent(input$tickerSettings, {
+    updateSelectizeInput(session, "ticker_base_currency", selected = ticker_base_currency())
+    updateSelectizeInput(session, "ticker_display_currencies", selected = ticker_display_currencies())
+  })
+  
   output$base_currency_output <- renderPrint({
     req(input$base_currency)
     paste("Selected base currency: ", long_curr_names[[input$base_currency]], " (", input$base_currency, ")")
@@ -37,7 +62,6 @@ function(input, output, session) {
   })
 
   output$currency_plot <- renderPlotly({
-    # Ensure we have all inputs before proceeding
     req(input$base_currency, input$currency, input$dateRange)
     
     base_currency <- input$base_currency
@@ -45,26 +69,21 @@ function(input, output, session) {
     start_date <- input$dateRange[1]
     end_date <- input$dateRange[2]
     
-    # Get data from API
     data <- from_to_values(base_currency, start_date, end_date)
     
-    # Make sure data exists and has the chosen currency column
     req(data, chosen_currency %in% colnames(data))
-    
-    # Create data frame with the specific currency data
+
     currency_data <- data.frame(
-      date = as.Date(data[[1]]),  # Convert first column to date
-      value = as.numeric(data[[chosen_currency]])  # Get values for chosen currency
+      date = as.Date(data[[1]]),
+      value = as.numeric(data[[chosen_currency]])
     )
     
-    # Check if we have data
     req(nrow(currency_data) > 0)
     
-    # Debug print - remove this in production
+
     print(paste("Data rows:", nrow(currency_data)))
     print(head(currency_data))
     
-    # Create the plot
     p <- ggplot(currency_data, aes(x = date, y = value)) +
       geom_line(color = "blue", linewidth = 1) +
       labs(
@@ -110,25 +129,21 @@ function(input, output, session) {
     currency_data_list <- two_days_values(base_currency, start_date, end_date) 
     selected_columns <- c("date", chosen_currencies)
     filtered_data <- currency_data_list[, selected_columns, drop = FALSE]
-    # Calculate percentage change between the second and first currency columns
     values <- c()
     for (i in 2:length(filtered_data)) {
       values <- c(values, ((filtered_data[2, i] / filtered_data[1, i]) - 1) * 100)
     }
-    # Create a tidy data frame with currency and percentage change
+
     colnames <- colnames(filtered_data)[-1]
     result <- data.frame(
         Currency = colnames,
         PercentChange = round(values, 2)
     )
     currency_data <- result
-    # Add color column based on positive or negative change
     currency_data$Color <- ifelse(currency_data$PercentChange >= 0, "Increase", "Decrease")
 
-    # Sort data by percentage change (ascending)
     currency_data <- currency_data[order(currency_data$PercentChange), ]
 
-    # Create the ggplot2 visualization (vertical barchart)
     p <- ggplot(currency_data, aes(x = reorder(Currency, PercentChange), 
                               y = PercentChange, 
                               fill = Color)) +
@@ -149,13 +164,10 @@ function(input, output, session) {
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank()
       ) +
-      # Add a reference line at 0
+
       geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", size = 0.5) +
       coord_flip()
 
-    # Print the static plot
-
-    # Convert to interactive plotly chart
     ggplotly(p) %>%
       layout(
         hoverlabel = list(bgcolor = "white"),
@@ -207,22 +219,20 @@ function(input, output, session) {
     today <- format(Sys.Date(), "%Y-%m-%d")
     yesterday <- format(Sys.Date() - 1, "%Y-%m-%d")
 
-    chosen_currencies <- c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr", "rub", "brl", "zar", "krw", "mxn", "hkd", "sgd", "nzd", "sek", "nok", "dkk", "pln")
+    base_currency <- ticker_base_currency()
+    chosen_currencies <- ticker_display_currencies()
     
-    currency_data_list <- two_days_values("usd", today, yesterday)
+    currency_data_list <- two_days_values(base_currency, today, yesterday)
     req(currency_data_list)
     
     all_cols <- names(currency_data_list)
     currency_cols <- if(all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
     
+    currency_cols <- currency_cols[currency_cols %in% chosen_currencies & currency_cols != base_currency]
+    
     currency_items <- c()
 
-
-    process_currency <- function(col, currency_data_list, chosen_currencies, tmp_dir = '/tmp') {
-      if (!(col %in% chosen_currencies)) {
-        return(NULL)
-      }
-      
+    process_currency <- function(col, currency_data_list, chosen_currencies, base_currency, tmp_dir = '/tmp') {
       yesterday_val <- as.numeric(currency_data_list[1, col])
       today_val <- as.numeric(currency_data_list[2, col])
       
@@ -236,11 +246,11 @@ function(input, output, session) {
         html_item <- sprintf(
           '<div style="background-color: #101111; color: #dcdddd; text-align: center; font-family: Arial, sans-serif; padding: 6px; margin: 0;">
           <style>body { margin: 0; padding: 0; background-color: #101111; } html { margin: 0; padding: 0; background-color: #101111; }</style>
-          <div style="font-weight: bold; font-size: 16px;">%s/USD</div>
+          <div style="font-weight: bold; font-size: 16px;">%s/%s</div>
           <div style="color: %s; font-size: 14px;">%s %.2f%%</div>
           <div style="color: #dcdddd; font-size: 18px; font-weight: 500;">%.4f</div>
           </div>',
-          toupper(col), color, arrow, abs(change), today_val
+          toupper(col), toupper(base_currency), color, arrow, abs(change), today_val
         )
         
         html_file <- file.path(tmp_dir, paste0("currency_", col, ".html"))
@@ -266,15 +276,15 @@ function(input, output, session) {
 
     plan(multisession, workers = min(length(batches), availableCores() - 1))
 
-    # Run in parallel
+    # Run in parallel - now currency_cols is already filtered
     currency_items <- future_map(currency_cols, process_currency,
                                 currency_data_list = currency_data_list,
                                 chosen_currencies = chosen_currencies,
+                                base_currency = base_currency,
                                 .options = furrr_options(seed = TRUE))
 
-    # Remove NULL values and flatten
     currency_items <- unlist(currency_items[!sapply(currency_items, is.null)])
-    plan(sequential)  # Reset to sequential processing after parallel execution
+    plan(sequential)
 
     
     if (length(currency_items) == 0) {
@@ -322,7 +332,7 @@ function(input, output, session) {
         "
           )
     )
-})
+  })
   
   output$stock_comparison_plot = renderPlotly({
     req(input$stock_symbols, input$stocks_comparison_dateRange, input$stock_comparison_interval)

@@ -7,6 +7,7 @@ library(ggplot2)
 library(dplyr)
 library(httr)
 library(slickR)
+library(shinyBS)
 source("api.r")
 
 currency_list <- colnames(currency_finder())
@@ -346,18 +347,64 @@ dashboardPage(
         )
       )
     ),
-    tags$head(
-      tags$style(HTML("
-        #currencyTicker, 
-        #currencyTicker .slick-track, 
-        #currencyTicker .slick-slide {
-          background-color: #101111 !important;
-        }
-      "))
-    ),
+    
     tags$div(
-      style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #101111; border-top: 1px solid #101111; padding: 0px 0;",
+      style = "position: fixed; bottom: 90px; right: 20px; z-index: 1000; background: #101111; border-radius: 5px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);",
+      class = "ticker-settings",
+      actionButton("tickerSettings", "⚙️ Settings", class = "settings-btn")
+    ),
+    
+    tags$div(
+      style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 999 ; background: #101111; border-top: 1px solid #101111; padding: 0px 0;",
       slickROutput("currencyTicker", height = "60px")
+    ),
+    
+    # Settings Modal
+    bsModal(
+      id = "settingsModal",
+      title = "Currency Ticker Settings",
+      trigger = "tickerSettings",
+      size = "large",
+      fluidRow(
+        column(6,
+          selectizeInput(
+            inputId = "ticker_base_currency",
+            label = "Choose base currency for ticker:",
+            choices = currency_list,
+            selected = "usd",
+            options = list(placeholder = "Search…")
+          )
+        ),
+        column(6,
+          selectizeInput(
+            inputId = "ticker_display_currencies",
+            label = "Choose currencies to display:",
+            choices = currency_list,
+            selected = c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr"),
+            multiple = TRUE,
+            options = list(
+              placeholder = "Search and select currencies…",
+              maxItems = 50
+            )
+          )
+        )
+      ),
+      fluidRow(
+        column(12,
+          tags$div(
+            style = "margin-top: 15px; padding: 10px; background-color: #101111; border-radius: 5px; border-left: 4px solid #25be76 ;",
+            tags$small(
+              style = "color: #dcdddd;",
+              HTML("<strong>Tip:</strong> Select up to 50 currencies to display in the ticker. Default selection includes 8 major currencies. <br>You can reset to defaults at any time. Note that this can take a while to load if many currencies are selected.")
+            )
+          )
+        )
+      ),
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("resetDefaults", "Reset to Defaults", class = "btn btn-secondary"),
+        actionButton("saveSettings", "Save Settings", class = "btn btn-primary")
+      )
     )
   )
 )

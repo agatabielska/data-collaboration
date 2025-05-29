@@ -200,3 +200,64 @@ body > div.wrapper > div > section > div:nth-child(3) {
     border-top: 0px !important;
     padding: 0px !important;
 }
+
+
+#currencyTicker, 
+#currencyTicker .slick-track, 
+#currencyTicker .slick-slide {
+  background-color: #101111 !important;
+}
+
+/* Settings button styling */
+.ticker-settings {
+  position: fixed;
+  bottom: 65px;
+  right: 20px;
+  z-index: 1001;
+  background: #101111;
+  border: 1px solid #333;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.settings-btn {
+  background: #25be76 !important;
+  border: none !important;
+  color: #101111 !important;
+  padding: 8px 12px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: bold;
+}
+
+.settings-btn:hover {
+  background: #101111 !important;
+  color: #dcdddd !important;
+}
+
+/* Modal styling */
+.modal-content {
+  background-color: #1a1a1a !important;
+  color: #dcdddd !important;
+  border: 1px solid #333 !important;
+}
+
+.modal-header {
+  border-bottom: 1px solid #333 !important;
+}
+
+.modal-footer {
+  border-top: 1px solid #333 !important;
+}
+
+.btn-primary {
+  background-color: #25be76 !important;
+  border-color: #25be76 !important;
+  color: #101111 !important;
+}
+
+.btn-secondary {
+  background-color: #666 !important;
+  border-color: #666 !important;
+}
