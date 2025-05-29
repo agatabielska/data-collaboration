@@ -177,6 +177,11 @@ input[type=number] {
     color:#dcdddd !important;
 }
 
+#sidebarItemExpanded > div:nth-child(6) > div:nth-child(1) > div > div > div.selectize-input.items.not-full.has-options.has-items > div {
+    background-color: #080808 !important;
+    color:#dcdddd !important;
+}
+
 
 li.treeview .active {
     border-left: 5px solid #25be76 !important;

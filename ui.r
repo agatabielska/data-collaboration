@@ -243,19 +243,19 @@ dashboardPage(
         ),
         fluidRow(
           box(
-            width = 6,
+            width = 4,
             status = "info",
             solidHeader = TRUE,
             verbatimTextOutput("base_currency_bnb_output")
           ),
           box(
-            width = 6,
+            width = 4,
             status = "info",
             solidHeader = TRUE,
             verbatimTextOutput("date_range_bnb_output")
           ),
           box(
-            width = 6,
+            width = 4,
             status = "info",
             solidHeader = TRUE,
             verbatimTextOutput("currencies_bnb_output")
