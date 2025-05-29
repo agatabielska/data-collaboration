@@ -11,6 +11,7 @@ source("api.r")
 
 currency_list <- colnames(currency_finder())
 
+
 theme = create_theme(adminlte_color(light_blue = "#006288"))
 
 dashboardPage(

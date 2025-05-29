@@ -13,6 +13,7 @@ library(htmltools)
 
 
 source("api.r")
+long_curr_names <- short_to_currency()
 
 apikey = plotlyapikey = '99RHTNDE9YD9TMOW'
 twelve_apikey = '6abb374eb01c45979b59e87327fed240'
@@ -20,12 +21,12 @@ twelve_apikey = '6abb374eb01c45979b59e87327fed240'
 function(input, output, session) {
   output$base_currency_output <- renderPrint({
     req(input$base_currency)
-    paste("Selected base currency:", input$base_currency)
+    paste("Selected base currency: ", long_curr_names[[input$base_currency]], " (", input$base_currency, ")")
   })
   
   output$currency_output <- renderPrint({
     req(input$currency)
-    paste("Selected target currency:", input$currency)
+    paste0("Selected target currency: ", long_curr_names[[input$currency]], " (", input$currency, ")")
   })
   
   output$currency_date <- renderPrint({
@@ -67,7 +68,10 @@ function(input, output, session) {
     p <- ggplot(currency_data, aes(x = date, y = value)) +
       geom_line(color = "blue", linewidth = 1) +
       labs(
-        title = paste("Exchange Rate:", base_currency, "to", chosen_currency), 
+        title = paste0("Exchange Rate: ", long_curr_names[[base_currency]],
+                      " (", base_currency, ")", " to ", long_curr_names[[chosen_currency]],
+                      " (", chosen_currency, ")"), 
+        subtitle = paste("From", start_date, "to", end_date),
         y = "Value", 
         x = "Date"
       ) +
@@ -78,13 +82,13 @@ function(input, output, session) {
 
   output$base_currency_bnb_output <- renderPrint({
     req(input$base_currency_bnb)
-    paste("Selected base currency:", input$base_currency_bnb)
+    paste0("Selected base currency: ", long_curr_names[[input$base_currency_bnb]], " (", input$base_currency_bnb, ")")
   })
 
   output$currencies_bnb_output <- renderPrint({
     req(input$currencies_bnb)
     if (length(input$currencies_bnb) > 0) {
-      paste("Selected target currencies:", paste(input$currencies_bnb, collapse = ", "))
+      paste0("Selected target currencies: ", paste(input$currencies_bnb, collapse = ", "))
     } else {
       paste("No target currencies selected.")
     }
@@ -168,7 +172,7 @@ function(input, output, session) {
     req(input$from_currency, input$to_currency, input$amount_to_convert, input$dateInput_converter)
 
     calculated <- input$amount_to_convert * full_api(input$dateInput_converter, input$from_currency)[[input$to_currency]]
-    paste("Calculated amount:", calculated, input$to_currency)
+    paste("Calculated amount:", round(calculated, 2), long_curr_names[[input$to_currency]])
 
   })
   
@@ -200,8 +204,8 @@ function(input, output, session) {
 
   output$currencyTicker <- renderSlickR({
 
-    today <- format(Sys.Date() - 1, "%Y-%m-%d")
-    yesterday <- format(Sys.Date() - 2, "%Y-%m-%d")
+    today <- format(Sys.Date(), "%Y-%m-%d")
+    yesterday <- format(Sys.Date() - 1, "%Y-%m-%d")
 
     chosen_currencies <- c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr", "rub", "brl", "zar", "krw", "mxn", "hkd", "sgd", "nzd", "sek", "nok", "dkk", "pln")
     
