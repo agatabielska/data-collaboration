@@ -196,9 +196,6 @@ vantage_symbols = function(){
 }
 
 twelve_candle = function(symbol, from, to, interval = '1day', api_key){
-  time_diff = as.numeric(difftime(to, from, units = "days"))
-  
-
   timezone = 'Europe/Warsaw'
   url = paste0('https://api.twelvedata.com/heikinashicandles?symbol=', symbol, '&interval=', interval, '&start_date=', from, '&end_date=', to, '&timezone=', timezone, '&apikey=', api_key)
   res = GET(url)
@@ -210,6 +207,58 @@ twelve_candle = function(symbol, from, to, interval = '1day', api_key){
   df = df %>% mutate(datetime = parse_date_time(datetime, orders = c("ymd", "ymd HMS")))
   fig = df %>% plot_ly(x = ~datetime, type="candlestick", open = ~heikinopens, close = ~heikincloses, high = ~heikinhighs, low = ~heikinlows) 
   fig = fig %>% layout(title = paste("Candlestick chart of", symbol), xaxis=list(title="Time", tickangle=45))
+  return(fig)
+}
+
+twelve_compare = function(symbols, from, to, interval = '1day', api_key){
+  timezone = 'Europe/Warsaw'
+  url = paste0('https://api.twelvedata.com/time_series?symbol=', paste(symbols, collapse=','), '&interval=', interval, '&start_date=', from, '&end_date=', to, '&timezone=', timezone, '&apikey=', api_key)
+  res = GET(url)
+  content = content(res, "text", encoding = "UTF-8")
+  data = fromJSON(content(res, "text", encoding = "UTF-8"))
+  symbol_dfs = list()
+  
+  for(sym in names(data)){
+    if(data[[sym]]$status != "ok"){
+      next
+    }
+    df = data.frame(data[[sym]]$values)
+    df = df %>% mutate(datetime = parse_date_time(datetime, orders = c("ymd", "ymd HMS")))
+    symbol_dfs[[sym]] = df
+  }
+  
+  fig = NULL
+  
+  for (nm in names(symbol_dfs)) {
+    df = symbol_dfs[[nm]]
+    df$close = as.numeric(df$close)  # ensure numeric
+    
+    if (is.null(fig)) {
+      fig = plot_ly(
+        data = df,
+        x    = ~datetime,
+        y    = ~close,
+        type = 'scatter',
+        mode = 'lines',
+        name = nm
+      )
+    } else {
+      fig = fig %>%
+        add_lines(
+          data = df,
+          x    = ~datetime,
+          y    = ~close,
+          name = nm
+        )
+    }
+  }
+  
+  fig = fig %>%
+    layout(
+      title = "Closing Prices Over Time",
+      xaxis = list(title = "Time"),
+      yaxis = list(title = "Close")
+    )
   return(fig)
 }
 
@@ -226,4 +275,9 @@ twelve_candle = function(symbol, from, to, interval = '1day', api_key){
 # q = vantage_query('TOP_GAINERS_LOSERS', list(), apikey)
 # vantage_grab(q, 'metadata')
 # vantage_daily_plot("GOOG", api_key = apikey)
-#twelve_candle('AAPL', as.Date('2024-05-23'), as.Date('2025-05-26'), twelve_apikey)
+#twelve_candle('AAPL', as.Date('2024-05-23'), as.Date('2025-05-26') twelve_apikey)
+url = paste0('https://api.twelvedata.com/heikinashicandles?symbol=AAPL,GOOG&interval=1day&apikey=',twelve_apikey)
+twelve_compare(c('AAPL','GOOG'), '2023-01-01', '2025-01-01', '1day', twelve_apikey)
+
+
+

@@ -357,4 +357,10 @@ function(input, output, session) {
         )
   )
 })
+  
+  output$stock_comparison_plot = renderPlotly({
+    req(input$stock_symbols, input$stocks_comparison_dateRange, input$stock_comparison_interval)
+    
+    twelve_compare(input$stock_symbols, input$stocks_comparison_dateRange[1], input$stocks_comparison_dateRange[2], input$stock_comparison_interval, api_key = twelve_apikey)
+  })
 }
