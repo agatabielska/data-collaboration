@@ -337,10 +337,19 @@ dashboardPage(
           )
         )
       )
-    )#,
-    # tags$div(
-    #   style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-top: 1px solid #dee2e6; padding: 10px 0;",
-    #   slickROutput("currencyTicker", height = "60px")
-    # )
+    ),
+    tags$head(
+      tags$style(HTML("
+        #currencyTicker, 
+        #currencyTicker .slick-track, 
+        #currencyTicker .slick-slide {
+          background-color: #101111 !important;
+        }
+      "))
+    ),
+    tags$div(
+      style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #101111; border-top: 1px solid #101111; padding: 0px 0;",
+      slickROutput("currencyTicker", height = "60px")
+    )
   )
 )

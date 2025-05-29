@@ -200,8 +200,8 @@ function(input, output, session) {
 
   output$currencyTicker <- renderSlickR({
 
-  today <- format(Sys.Date(), "%Y-%m-%d")
-  yesterday <- format(Sys.Date() - 1, "%Y-%m-%d")
+  today <- format(Sys.Date() - 1, "%Y-%m-%d")
+  yesterday <- format(Sys.Date() - 2, "%Y-%m-%d")
 
   chosen_currencies <- c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr", "rub")
   
@@ -212,11 +212,13 @@ function(input, output, session) {
   currency_cols <- if(all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
   
   currency_items <- c()
-  
-  for (col in currency_cols) {
+
+
+  process_currency <- function(col, currency_data_list, chosen_currencies, tmp_dir = '/tmp') {
     if (!(col %in% chosen_currencies)) {
-      next 
+      return(NULL)
     }
+    
     yesterday_val <- as.numeric(currency_data_list[1, col])
     today_val <- as.numeric(currency_data_list[2, col])
     
@@ -228,22 +230,86 @@ function(input, output, session) {
       arrow <- ifelse(change == 0, "-", arrow)
       
       html_item <- sprintf(
-        '<div style="text-align: center; padding: 0 20px; font-family: Arial, sans-serif;">
-          <div style="font-weight: bold; font-size: 16px;">%s/USD</div>
-          <div style="color: %s; font-size: 14px;">%s %.2f%%</div>
-          <div style="color: #666; font-size: 18px; font-weight: 500;">%.4f</div>
+        '<div style="background-color: #101111; color: #dcdddd; text-align: center; font-family: Arial, sans-serif; padding: 6px; margin: 0;">
+        <style>body { margin: 0; padding: 0; background-color: #101111; } html { margin: 0; padding: 0; background-color: #101111; }</style>
+        <div style="font-weight: bold; font-size: 16px;">%s/USD</div>
+        <div style="color: %s; font-size: 14px;">%s %.2f%%</div>
+        <div style="color: #dcdddd; font-size: 18px; font-weight: 500;">%.4f</div>
         </div>',
         toupper(col), color, arrow, abs(change), today_val
       )
-      tmp_dir <- '/tmp'
-      html_file <- file.path(tmp_dir, paste0("currency_", col, ".html"))
-      img_file  <- file.path(tmp_dir, paste0("currency_", col, ".png"))
-      htmltools::save_html(HTML(html_item), html_file)
-      webshot2::webshot(html_file, img_file, vwidth = 250, vheight = 100)
       
-      currency_items <- c(currency_items, img_file)
+      html_file <- file.path(tmp_dir, paste0("currency_", col, ".html"))
+      img_file <- file.path(tmp_dir, paste0("currency_", col, ".png"))
+      
+      htmltools::save_html(HTML(html_item), html_file)
+      webshot2::webshot(
+        html_file,
+        img_file,
+        vwidth = 200,
+        vheight = 200,
+        zoom = 2,
+        delay = 0.1
+      )
+      
+      return(img_file)
     }
+    return(NULL)
   }
+
+  batch_size <- 3
+  batches <- split(currency_cols, ceiling(seq_along(currency_cols) / batch_size))
+
+  plan(multisession, workers = min(length(batches), availableCores() - 1))
+
+  # Run in parallel
+  currency_items <- future_map(currency_cols, process_currency,
+                              currency_data_list = currency_data_list,
+                              chosen_currencies = chosen_currencies,
+                              .options = furrr_options(seed = TRUE))
+
+  # Remove NULL values and flatten
+  currency_items <- unlist(currency_items[!sapply(currency_items, is.null)])
+  plan(sequential)  # Reset to sequential processing after parallel execution
+  # for (col in currency_cols) {
+  #   if (!(col %in% chosen_currencies)) {
+  #     next 
+  #   }
+  #   yesterday_val <- as.numeric(currency_data_list[1, col])
+  #   today_val <- as.numeric(currency_data_list[2, col])
+    
+  #   if (!is.na(yesterday_val) && !is.na(today_val) && yesterday_val != 0) {
+  #     change <- ((today_val / yesterday_val) - 1) * 100
+  #     color <- ifelse(change > 0, "#28a745", "#dc3545")
+  #     color <- ifelse(change == 0, "#666", color)
+  #     arrow <- ifelse(change > 0, "▲", "▼")
+  #     arrow <- ifelse(change == 0, "-", arrow)
+      
+  #     html_item <- sprintf(
+  #       '<div style="background-color: #101111; color: #dcdddd; text-align: center; font-family: Arial, sans-serif; padding: 6px; margin: 0;">
+  #         <style>body { margin: 0; padding: 0; background-color: #101111; } html { margin: 0; padding: 0; background-color: #101111; }</style>
+  #         <div style="font-weight: bold; font-size: 16px;">%s/USD</div>
+  #         <div style="color: %s; font-size: 14px;">%s %.2f%%</div>
+  #         <div style="color: #dcdddd; font-size: 18px; font-weight: 500;">%.4f</div>
+  #       </div>',
+  #       toupper(col), color, arrow, abs(change), today_val
+  #     )
+  #     tmp_dir <- '/tmp'
+  #     html_file <- file.path(tmp_dir, paste0("currency_", col, ".html"))
+  #     img_file  <- file.path(tmp_dir, paste0("currency_", col, ".png"))
+  #     htmltools::save_html(HTML(html_item), html_file)
+  #     webshot2::webshot(
+  #       html_file, 
+  #       img_file, 
+  #       vwidth = 200,      # Increased width for better resolution
+  #       vheight = 200,     # Increased height proportionally
+  #       zoom = 2,          # 2x zoom for higher DPI
+  #       delay = 0.5,       # Small delay to ensure fonts load  # Crop to desired size after high-res capture
+  #     )
+      
+  #     currency_items <- c(currency_items, img_file)
+  #   }
+  # }
   
   if (length(currency_items) == 0) {
     return(HTML('<div style="text-align: center; padding: 20px; color: #666;">No currency data available.</div>'))
