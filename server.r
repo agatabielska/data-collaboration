@@ -209,9 +209,18 @@ function(input, output, session) {
   output$stock_plot = renderPlotly({
     req(input$stock_symbol, input$stock_dateRange, input$stock_interval)
     
-    #vantage_daily_plot(input$stock_symbol, TRUE, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
-    #vantage_weekly_plot(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], api_key = apikey)
-    twelve_candle(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], input$stock_interval, api_key = twelve_apikey)
+    # Generate the candlestick chart using twelve_candle
+    p <- twelve_candle(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], input$stock_interval, api_key = twelve_apikey)
+    
+    # Apply dark theme layout if the plot object is not NULL
+    if (!is.null(p)) {
+      p <- p %>%
+        layout(template = "plotly_dark",
+               paper_bgcolor = "#2c2c2c",  # Dark background for the paper
+               plot_bgcolor = "#2c2c2c",   # Dark background for the plot area
+               font = list(color = 'white')) # Set font color to white
+    }
+    p # Return the plot object
   })
 
   output$currencyTicker <- renderSlickR({
@@ -337,6 +346,118 @@ function(input, output, session) {
   output$stock_comparison_plot = renderPlotly({
     req(input$stock_symbols, input$stocks_comparison_dateRange, input$stock_comparison_interval)
     
-    twelve_compare(input$stock_symbols, input$stocks_comparison_dateRange[1], input$stocks_comparison_dateRange[2], input$stock_comparison_interval, api_key = twelve_apikey)
+    # Generate the comparison plot using twelve_compare
+    p <- twelve_compare(input$stock_symbols, input$stocks_comparison_dateRange[1], input$stocks_comparison_dateRange[2], input$stock_comparison_interval, api_key = twelve_apikey)
+    
+    # Apply dark theme layout if the plot object is not NULL
+    if (!is.null(p)) {
+      p <- p %>%
+        layout(template = "plotly_dark",
+               paper_bgcolor = "#2c2c2c",  # Dark background for the paper
+               plot_bgcolor = "#2c2c2c",   # Dark background for the plot area
+               font = list(color = 'white')) # Set font color to white
+    }
+    p # Return the plot object
+  })
+
+  # Helper function to create HTML for a single gainer card
+  create_gainer_card_html <- function(gainer_data) {
+    # Ensure all required fields are present
+    required_fields <- c("ticker", "price", "change_amount", "change_percentage", "volume")
+    if (!all(required_fields %in% names(gainer_data))) {
+      return(tags$div(class = "col-md-3", 
+                      tags$div(class = "gainer-card error-card", 
+                               style="padding: 10px; border: 1px solid red; margin-bottom: 10px; background-color: #3c3c3c; color: white;",
+                               tags$p("Error: Missing data for this gainer."))))
+    }
+    
+    # Clean percentage string (remove '%') and convert to numeric
+    change_percentage_numeric <- suppressWarnings(as.numeric(sub("%", "", gainer_data$change_percentage)))
+    
+    # Determine color based on change_percentage
+    card_border_color <- if (is.na(change_percentage_numeric)) {
+        "border-left: 5px solid #6c757d;" # Grey for NA
+    } else if (change_percentage_numeric > 0) {
+      "border-left: 5px solid #28a745;" # Green for positive
+    } else if (change_percentage_numeric < 0) {
+      "border-left: 5px solid #dc3545;" # Red for negative
+    } else {
+      "border-left: 5px solid #6c757d;" # Grey for no change
+    }
+    
+    tags$div(class = "col-md-3", 
+             style = "padding-bottom: 15px;", 
+             tags$div(class = "gainer-card", 
+                      style = paste0("background-color: #2c2c2c; color: #e0e0e0; border-radius: 5px; padding: 15px; height: 100%;", card_border_color),
+                      tags$h5(style = "margin-top: 0; font-weight: bold; color: #ffffff;", gainer_data$ticker),
+                      tags$p(style = "margin-bottom: 5px; font-size: 0.9em;", paste("Price:", gainer_data$price)),
+                      tags$p(style = "margin-bottom: 5px; font-size: 0.9em;", paste("Change:", gainer_data$change_amount)),
+                      {
+                        display_change_percentage_str <- if (!is.na(change_percentage_numeric)) {
+                          sprintf("%.2f%%", change_percentage_numeric)
+                        } else {
+                          gainer_data$change_percentage # Fallback to original string
+                        }
+                        tags$p(style = "margin-bottom: 5px; font-size: 0.9em;", paste("Change %:", display_change_percentage_str))
+                      },
+                      tags$p(style = "margin-bottom: 0; font-size: 0.9em;", paste("Volume:", gainer_data$volume))
+             )
+    )
+  }
+
+  # Output for Top Gainers in the Stocks tab
+  output$top_gainers_stocks_ui <- renderUI({
+    top_gainers_df <- vantage_top_gainers() 
+    
+    if (!is.null(top_gainers_df) && is.data.frame(top_gainers_df)) {
+      
+      if (nrow(top_gainers_df) > 0 && "change_percentage" %in% names(top_gainers_df)) {
+        top_gainers_df$change_percentage_numeric <- suppressWarnings(as.numeric(sub("%", "", top_gainers_df$change_percentage)))
+        top_gainers_df <- top_gainers_df[!is.na(top_gainers_df$change_percentage_numeric), ]
+        
+        if (nrow(top_gainers_df) > 0) {
+            top_gainers_df <- top_gainers_df[order(-top_gainers_df$change_percentage_numeric), ]
+            top_n_gainers <- head(top_gainers_df, 10)
+
+            if(nrow(top_n_gainers) > 0) { # Ensure top_n_gainers is not empty before lapply
+              gainer_cards <- lapply(seq_len(nrow(top_n_gainers)), function(i) {
+                create_gainer_card_html(top_n_gainers[i, ])
+              })
+              return(fluidRow(gainer_cards))
+            }
+        }
+      }
+    }
+    return(tags$div(style = "color: #e0e0e0; padding: 15px; text-align: center;", "No top gainers data available or data format issue."))
+  })
+
+  # Output for Top Gainers in the Stocks Comparison tab
+  output$top_gainers_comparison_ui <- renderUI({
+    top_gainers_df <- vantage_top_gainers() 
+    
+    if (!is.null(top_gainers_df) && is.data.frame(top_gainers_df)) {
+      
+      if (nrow(top_gainers_df) > 0 && "change_percentage" %in% names(top_gainers_df)) {
+        top_gainers_df$change_percentage_numeric <- suppressWarnings(as.numeric(sub("%", "", top_gainers_df$change_percentage)))
+        top_gainers_df <- top_gainers_df[!is.na(top_gainers_df$change_percentage_numeric), ]
+
+        if (nrow(top_gainers_df) > 0) {
+            top_gainers_df <- top_gainers_df[order(-top_gainers_df$change_percentage_numeric), ]
+            top_n_gainers <- head(top_gainers_df, 10)
+
+            if(nrow(top_n_gainers) > 0) { # Ensure top_n_gainers is not empty before lapply
+              gainer_cards <- lapply(seq_len(nrow(top_n_gainers)), function(i) {
+                create_gainer_card_html(top_n_gainers[i, ])
+              })
+              return(fluidRow(gainer_cards))
+            }
+        }
+      }
+    }
+    return(tags$div(style = "color: #e0e0e0; padding: 15px; text-align: center;", "No top gainers data available or data format issue."))
+  })
+
+  observeEvent(input$aboutButton, {
+    updateTabItems(session, "sidebarmenu", selected = "about_page_content")
   })
 }

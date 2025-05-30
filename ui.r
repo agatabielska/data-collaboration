@@ -17,9 +17,11 @@ theme = create_theme(adminlte_color(light_blue = "#006288"))
 
 dashboardPage(
   skin = "black",
-  dashboardHeader(title = tagList(
-    span("Multi-Page Dashboard")
-  )),
+  dashboardHeader(
+    title = tagList(
+      span("Multi-Page Dashboard")
+    )
+  ),
   dashboardSidebar(
     width = 240,
     sidebarMenu(
@@ -325,6 +327,17 @@ dashboardPage(
             width = 12,
             plotlyOutput("stock_plot", height = "400px")
           )
+        ),
+        fluidRow(
+          box(
+            title = "Top Gainers",
+            status = "success",
+            solidHeader = TRUE,
+            width = 12,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            uiOutput("top_gainers_stocks_ui")
+          )
         )
       ),
       tabItem(
@@ -343,6 +356,45 @@ dashboardPage(
             status = "info",
             solidHeader = TRUE,
             plotlyOutput("stock_comparison_plot", height = "400px")
+          )
+        ),
+        fluidRow(
+          box(
+            title = "Top Gainers",
+            status = "success",
+            solidHeader = TRUE,
+            width = 12,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            uiOutput("top_gainers_comparison_ui")
+          )
+        )
+      ),
+      tabItem(
+        tabName = "about_page_content",
+        fluidRow(
+          box(
+            title = "About This Dashboard",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            tags$div(
+              style = "padding: 20px; color: #e0e0e0; background-color: #2c2c2c; border-radius: 5px;",
+              tags$h4("Made by:"),
+              tags$p("Agata Bielska 160313"),
+              tags$p("Paweł Charkiewicz 160288"),
+              tags$hr(),
+              tags$h4("Data sources:"),
+              tags$ul(
+                tags$li("fawazahmed0's currency API"),
+                tags$li("TwelveData stock API"),
+                tags$li("AlphaVantage stock API")
+              ),
+              tags$hr(),
+              tags$h4("Remarks:"),
+              tags$p("Dashboard rendering may be computationally demanding at times. Please be patient."),
+              tags$p("TwelveData API only handles eight tokens per minute. Please try to not overload the API with too many subsequent changes in stock charts. This also applies to comparison chart, as every symbol consumes one token.")
+            )
           )
         )
       )
@@ -405,6 +457,10 @@ dashboardPage(
         actionButton("resetDefaults", "Reset to Defaults", class = "btn btn-secondary"),
         actionButton("saveSettings", "Save Settings", class = "btn btn-primary")
       )
-    )
+    ),
+    
+    tags$script(HTML(
+      '$(document).ready(function() {\n        var newMenuItemHTML = \'<a href="#shiny-tab-about_page_content" data-toggle="tab" data-value="about_page_content" style="color: white; display: flex; align-items: center; padding: 15px;"><i class="fa fa-info-circle" style="margin-right: 5px;"></i> <span>About</span></a>\';\n        var $newlyAddedLink = $(newMenuItemHTML);\n        $("nav").append($newlyAddedLink);\n\n        $newlyAddedLink.on(\'click\', function(e) {\n          e.preventDefault(); \n          if (typeof Shiny !== \'undefined\' && Shiny.setInputValue) {\n            Shiny.setInputValue("tabs", "about_page_content", { priority: "event" });\n          }\n        });\n      });'
+    ))
   )
 )

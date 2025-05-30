@@ -88,6 +88,28 @@ vantage_query = function(command, arguments, api_key) {
   }
 }
 
+vantage_top_gainers = function() {
+  url = 'https://www.alphavantage.co/query?function=TOP_GAINERS_LOSERS&apikey=demo'
+  res = GET(url)
+  if (status_code(res) == 200) {
+    content = fromJSON(content(res, "text", encoding = "UTF-8"))
+    return(content$top_gainers)
+  } else {
+    return(NULL)
+  }
+}
+
+vantage_market_status = function() {
+  url = 'https://www.alphavantage.co/query?function=MARKET_STATUS&apikey=demo'
+  res = GET(url)
+  if (status_code(res) == 200) {
+    content = fromJSON(content(res, "text", encoding = "UTF-8"))
+    return(content$markets)
+  } else {
+    return(NULL)
+  }
+}
+
 vantage_lytics = function(symbols, calculations, interval, from, to, api_key) {
   q = vantage_query(command = "ANALYTICS_FIXED_WINDOW", arguments = list(c("SYMBOLS", paste(as.vector(symbols), collapse = ',')), c("CALCULATIONS", paste(calculations, collapse = ',')), c("INTERVAL", interval), c("RANGE", from), c("RANGE", to)), api_key = api_key)
   return(q)
