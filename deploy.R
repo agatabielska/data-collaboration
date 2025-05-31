@@ -1,78 +1,35 @@
-.libPaths("/usr/local/lib/R/site-library")
-cat("loading packages from:", paste("\n - ", .libPaths(), collapse = ""), "\n\n")
+#!/usr/bin/env Rscript
 
-# use renv to detect and install required packages.
-if (file.exists("renv.lock")) {
-  renv::restore(prompt = FALSE)
-} else {
-  renv::hydrate()
-}
+# Load required library
+library(rsconnect)
 
-# set up some helper functions for fetching environment variables
-defined <- function(name) {
-  !is.null(Sys.getenv(name)) && Sys.getenv(name) != ""
-}
-required <- function(name) {
-  if (!defined(name)) {
-    stop("!!! input or environment variable '", name, "' not set")
-  }
-  Sys.getenv(name)
-}
-optional <- function(name) {
-  if (!defined(name)) {
-    return(NULL)
-  }
-  Sys.getenv(name)
+# Get environment variables
+token <- Sys.getenv("SHINYAPPS_TOKEN")
+secret <- Sys.getenv("SHINYAPPS_SECRET")
+app_name <- Sys.getenv("APP_NAME")
+account_name <- Sys.getenv("ACCOUNT_NAME")
+
+# Check if required environment variables are set
+if (token == "" || secret == "" || app_name == "" || account_name == "") {
+  stop("Missing required environment variables: SHINYAPPS_TOKEN, SHINYAPPS_SECRET, APP_NAME, ACCOUNT_NAME")
 }
 
-# resolve app dir
-# Note that we are likely already executing from the app dir, as
-# github sets the working directory to the workspace path on starting
-# the docker image.
-appDir <- ifelse(
-  defined("INPUT_APPDIR"),
-  required("INPUT_APPDIR"),
-  required("GITHUB_WORKSPACE")
+# Set up account
+cat("Setting up shinyapps.io account...\n")
+rsconnect::setAccountInfo(
+  name = account_name,
+  token = token,
+  secret = secret
 )
 
-# required inputs
-appName <- required("INPUT_APPNAME")
-accountName <- required("INPUT_ACCOUNTNAME")
-accountToken <- required("INPUT_ACCOUNTTOKEN")
-accountSecret <- required("INPUT_ACCOUNTSECRET")
-
-# optional inputs
-appFiles <- optional("INPUT_APPFILES")
-appFileManifest <- optional("INPUT_APPFILEMANIFEST")
-appTitle <- optional("INPUT_APPTITLE")
-logLevel <- optional("INPUT_LOGLEVEL")
-forceUpdate <- optional("INPUT_FORCEUPDATE")
-githubPackages <- optional("INPUT_GITHUBPACKAGES")
-
-# process appFiles
-if (!is.null(appFiles)) {
-  appFiles <- unlist(strsplit(appFiles, ",", TRUE))
-}
-
-# install packages from github
-if (!is.null(githubPackages)) {
-  githubToken <- required("INPUT_GITHUBTOKEN")
-  githubPackages <- unlist(strsplit(githubPackages, ",", TRUE))
-  devtools::install_github(githubPackages, auth_token = githubToken)
-}
-
-# set up account
-cat("checking account info...")
-rsconnect::setAccountInfo(accountName, accountToken, accountSecret)
-cat(" [OK]\n")
-
-# deploy application
+# Deploy the application with force update
+cat("Deploying application to shinyapps.io...\n")
 rsconnect::deployApp(
-  appDir = appDir,
-  appFiles = appFiles,
-  appFileManifest = appFileManifest,
-  appName = appName,
-  appTitle = appTitle,
-  account = accountName,
-  forceUpdate = forceUpdate
+  appDir = "/app",
+  appName = app_name,
+  account = account_name,
+  forceUpdate = TRUE,
+  launch.browser = FALSE
 )
+
+cat("Deployment completed successfully!\n")
