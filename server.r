@@ -230,21 +230,18 @@ function(input, output, session) {
   output$stock_plot = renderPlotly({
     req(input$stock_symbol, input$stock_dateRange, input$stock_interval)
     
-    # Generate the candlestick chart using twelve_candle
     p <- twelve_candle(input$stock_symbol, input$stock_dateRange[1], input$stock_dateRange[2], input$stock_interval, api_key = twelve_apikey)
     
-    # Apply dark theme layout if the plot object is not NULL
     if (!is.null(p)) {
       p <- p %>%
         layout(template = "plotly_dark",
-               paper_bgcolor = "#2c2c2c",  # Dark background for the paper
-               plot_bgcolor = "#2c2c2c",   # Dark background for the plot area
-               font = list(color = 'white')) # Set font color to white
+               paper_bgcolor = "#2c2c2c",
+               plot_bgcolor = "#2c2c2c",
+               font = list(color = 'white'))
     }
-    p # Return the plot object
+    p=
   })
 
- # Replace your currencyTicker output in server.r with this:
 
 output$currencyTicker <- renderUI({
   req(ticker_base_currency(), ticker_display_currencies())
@@ -352,8 +349,9 @@ output$currencyTicker <- renderUI({
     div(
       class = "ticker-track",
       currency_cards,
-      currency_cards, # duplicate for infinite loop
-      currency_cards # duplicate for infinite loop
+      currency_cards,
+      currency_cards, 
+      currency_cards
     )
   )
 })
@@ -385,13 +383,13 @@ output$currencyTicker <- renderUI({
     change_percentage_numeric <- suppressWarnings(as.numeric(sub("%", "", gainer_data$change_percentage)))
     
     card_border_color <- if (is.na(change_percentage_numeric)) {
-        "border-left: 5px solid #6c757d;" # Grey for NA
+        "border-left: 5px solid #6c757d;" 
     } else if (change_percentage_numeric > 0) {
-      "border-left: 5px solid #28a745;" # Green for positive
+      "border-left: 5px solid #28a745;" 
     } else if (change_percentage_numeric < 0) {
-      "border-left: 5px solid #dc3545;" # Red for negative
+      "border-left: 5px solid #dc3545;"
     } else {
-      "border-left: 5px solid #6c757d;" # Grey for no change
+      "border-left: 5px solid #6c757d;"
     }
     
     tags$div(class = "col-md-3", 
