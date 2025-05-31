@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install required R packages
-RUN R -e "install.packages(c('shiny', 'shinydashboard', 'shinythemes', 'fresh', 'plotly', 'ggplot2', 'dplyr', 'httr', 'webshot2', 'promises', 'htmlwidgets', 'slickR', 'htmltools', 'shinyBS', 'DT', 'jsonlite', 'lubridate'), repos='https://cran.rstudio.com/')"
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'shinythemes', 'fresh', 'plotly', 'ggplot2', 'dplyr', 'httr', 'webshot2', 'promises', 'htmlwidgets', 'slickR', 'htmltools', 'shinyBS', 'DT', 'jsonlite', 'lubridate', 'rsconnect'), repos='https://cran.rstudio.com/')"
 
 # Set working directory
 WORKDIR /app
