@@ -1,3 +1,4 @@
+library(rsconnect)
 rsconnect::setAccountInfo(
   name = Sys.getenv("SHINYAPPS_NAME"),
   token = Sys.getenv("SHINYAPPS_TOKEN"),
