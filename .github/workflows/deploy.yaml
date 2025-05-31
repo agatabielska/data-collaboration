@@ -26,4 +26,7 @@ jobs:
           # token and secret obtained from https://www.shinyapps.io/admin/#/tokens
           accountToken: ${{ secrets.SHINYAPPS_TOKEN }}
           accountSecret: ${{ secrets.SHINYAPPS_SECRET }}
-          forceUpdate: TRUE
+runs:
+  using: docker
+  image: Dockerfile
+  
