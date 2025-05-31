@@ -6,6 +6,7 @@ library(ggplot2)
 library(slickR)
 library(htmltools)
 library(shinyBS)
+install.packages("DT")
 library(DT) # Added DT library
 
 source("api.r")
@@ -237,116 +238,101 @@ function(input, output, session) {
     p # Return the plot object
   })
 
-  output$currencyTicker <- renderSlickR({
+ # Replace your currencyTicker output in server.r with this:
 
-    today <- format(Sys.Date(), "%Y-%m-%d")
-    yesterday <- format(Sys.Date() - 1, "%Y-%m-%d")
+output$currencyTicker <- renderUI({
+  today <- format(Sys.Date(), "%Y-%m-%d")
+  yesterday <- format(Sys.Date() - 1, "%Y-%m-%d")
 
-    base_currency <- ticker_base_currency()
-    chosen_currencies <- ticker_display_currencies()
+  base_currency <- ticker_base_currency()
+  chosen_currencies <- ticker_display_currencies()
+  
+  currency_data_list <- two_days_values(base_currency, today, yesterday)
+  req(currency_data_list)
+  
+  all_cols <- names(currency_data_list)
+  currency_cols <- if(all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
+  currency_cols <- currency_cols[currency_cols %in% chosen_currencies & currency_cols != base_currency]
+  
+  if(length(currency_cols) == 0) {
+    return(div(style = "text-align: center; padding: 20px; color: #666;", "No currency data available."))
+  }
+  
+  # Create currency cards
+  currency_cards <- lapply(currency_cols, function(col) {
+    yesterday_val <- as.numeric(currency_data_list[1, col])
+    today_val <- as.numeric(currency_data_list[2, col])
     
-    currency_data_list <- two_days_values(base_currency, today, yesterday)
-    req(currency_data_list)
-    
-    all_cols <- names(currency_data_list)
-    currency_cols <- if(all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
-    
-    currency_cols <- currency_cols[currency_cols %in% chosen_currencies & currency_cols != base_currency]
-    
-    currency_items <- c()
-
-    process_currency <- function(col, currency_data_list, chosen_currencies, base_currency, tmp_dir = '/tmp') {
-      yesterday_val <- as.numeric(currency_data_list[1, col])
-      today_val <- as.numeric(currency_data_list[2, col])
+    if (!is.na(yesterday_val) && !is.na(today_val) && yesterday_val != 0) {
+      change <- ((today_val / yesterday_val) - 1) * 100
+      color <- ifelse(change > 0, "#28a745", ifelse(change < 0, "#dc3545", "#666"))
+      arrow <- ifelse(change > 0, "▲", ifelse(change < 0, "▼", "-"))
       
-      if (!is.na(yesterday_val) && !is.na(today_val) && yesterday_val != 0) {
-        change <- ((today_val / yesterday_val) - 1) * 100
-        color <- ifelse(change > 0, "#28a745", "#dc3545")
-        color <- ifelse(change == 0, "#666", color)
-        arrow <- ifelse(change > 0, "▲", "▼")
-        arrow <- ifelse(change == 0, "-", arrow)
-        
-        html_item <- sprintf(
-          '<div style="background-color: #101111; color: #dcdddd; text-align: center; font-family: Arial, sans-serif; padding: 6px; margin: 0;">
-          <style>body { margin: 0; padding: 0; background-color: #101111; } html { margin: 0; padding: 0; background-color: #101111; }</style>
-          <div style="font-weight: bold; font-size: 16px;">%s/%s</div>
-          <div style="color: %s; font-size: 14px;">%s %.2f%%</div>
-          <div style="color: #dcdddd; font-size: 18px; font-weight: 500;">%.4f</div>
-          </div>',
-          toupper(col), toupper(base_currency), color, arrow, abs(change), today_val
-        )
-        
-        html_file <- file.path(tmp_dir, paste0("currency_", col, ".html"))
-        img_file <- file.path(tmp_dir, paste0("currency_", col, ".png"))
-        
-        htmltools::save_html(HTML(html_item), html_file)
-        webshot2::webshot(
-          html_file,
-          img_file,
-          vwidth = 200,
-          vheight = 200,
-          zoom = 2,
-          delay = 0.1
-        )
-        
-        return(img_file)
-      }
-      return(NULL)
+      div(
+        class = "currency-card",
+        style = paste0(
+          "display: inline-block; ",
+          "background-color: #101111; ",
+          "color: #dcdddd; ",
+          "text-align: center; ",
+          "font-family: Arial, sans-serif; ",
+          "padding: 10px 15px; ",
+          "margin: 5px; ",
+          "border-radius: 8px; ",
+          "border: 1px solid #333; ",
+          "min-width: 120px; ",
+          "box-shadow: 0 2px 4px rgba(0,0,0,0.3);"
+        ),
+        div(style = "font-weight: bold; font-size: 14px; margin-bottom: 5px;", 
+            paste0(toupper(col), "/", toupper(base_currency))),
+        div(style = paste0("color: ", color, "; font-size: 12px; margin-bottom: 3px;"), 
+            paste(arrow, sprintf("%.2f%%", abs(change)))),
+        div(style = "color: #dcdddd; font-size: 16px; font-weight: 500;", 
+            sprintf("%.4f", today_val))
+      )
+    } else {
+      NULL
     }
-
-    for (col in currency_cols) {
-      item <- process_currency(col, currency_data_list, chosen_currencies, base_currency)
-      if (!is.null(item)) {
-        currency_items <- c(currency_items, item)
-      }
-    }
-    
-    if (length(currency_items) == 0) {
-      return(HTML('<div style="text-align: center; padding: 20px; color: #666;">No currency data available.</div>'))
-    }
-    
-    slickR(
-      obj = currency_items,
-      slideId = "currencySlider",
-      height = 80,
-      width = "100%",
-      objLinks = "character"
-    ) + 
-    settings(
-      dots = FALSE,
-      infinite = TRUE,
-      slidesToShow = 6,
-      slidesToScroll = 1,
-      autoplay = TRUE,
-      autoplaySpeed = 3000,
-      arrows = FALSE,
-      pauseOnHover = TRUE,
-      responsive = JS(
-        "
-        function(slick) {
-          var updateSlidesToShow = function() {
-            var width = window.innerWidth;
-            var slidesToShow = 6;
-            if (width < 576) {
-          slidesToShow = 2;
-            } else if (width < 768) {
-          slidesToShow = 3;
-            } else if (width < 992) {
-          slidesToShow = 4;
-            } else if (width < 1200) {
-          slidesToShow = 5;
-            }
-            slick.slickSetOption('slidesToShow', slidesToShow, true);
-          };
-          updateSlidesToShow();
-          window.addEventListener('resize', function() {
-            updateSlidesToShow();
-          });
-        }
-        "
-          )
-    )
   })
+  
+  # Remove NULL entries
+  currency_cards <- currency_cards[!sapply(currency_cards, is.null)]
+  
+  if(length(currency_cards) == 0) {
+    return(div(style = "text-align: center; padding: 20px; color: #666;", "No valid currency data."))
+  }
+  
+  # Create scrolling container
+  div(
+    id = "currency-ticker-container",
+    style = paste0(
+      "position: fixed; ",
+      "bottom: 0; ",
+      "left: 0; ",
+      "right: 0; ",
+      "z-index: 999; ",
+      "background: #101111; ",
+      "border-top: 1px solid #333; ",
+      "padding: 10px 0; ",
+      "overflow-x: auto; ",
+      "white-space: nowrap; ",
+      "scrollbar-width: none; ", # Firefox
+      "-ms-overflow-style: none; " # IE
+    ),
+    tags$style(HTML("
+      #currency-ticker-container::-webkit-scrollbar { display: none; }
+      .currency-card { 
+        animation: slideLeft 30s linear infinite; 
+      }
+      @keyframes slideLeft {
+        0% { transform: translateX(100vw); }
+        100% { transform: translateX(-100%); }
+      }
+      .currency-card:hover { animation-play-state: paused; }
+    ")),
+    currency_cards
+  )
+})
   
   output$stock_comparison_plot = renderPlotly({
     req(input$stock_symbols, input$stocks_comparison_dateRange, input$stock_comparison_interval)

@@ -8,6 +8,7 @@ library(dplyr)
 library(httr)
 library(slickR)
 library(shinyBS)
+install.packages("DT", dependencies = TRUE) # Ensure DT is installed
 library(DT) # Added DT library
 source("api.r")
 
@@ -421,8 +422,8 @@ dashboardPage(
     ),
     
     tags$div(
-      style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 999 ; background: #101111; border-top: 1px solid #101111; padding: 0px 0;",
-      slickROutput("currencyTicker", height = "60px")
+      style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;",
+      uiOutput("currencyTicker")
     ),
     
     # Settings Modal
