@@ -6,7 +6,6 @@ library(ggplot2)
 library(slickR)
 library(htmltools)
 library(shinyBS)
-install.packages("DT")
 library(DT) # Added DT library
 
 source("api.r")
@@ -246,28 +245,27 @@ output$currencyTicker <- renderUI({
 
   base_currency <- ticker_base_currency()
   chosen_currencies <- ticker_display_currencies()
-  
+
   currency_data_list <- two_days_values(base_currency, today, yesterday)
   req(currency_data_list)
-  
+
   all_cols <- names(currency_data_list)
-  currency_cols <- if(all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
+  currency_cols <- if (all_cols[1] %in% c("date", "Date")) all_cols[-1] else all_cols
   currency_cols <- currency_cols[currency_cols %in% chosen_currencies & currency_cols != base_currency]
-  
-  if(length(currency_cols) == 0) {
+
+  if (length(currency_cols) == 0) {
     return(div(style = "text-align: center; padding: 20px; color: #666;", "No currency data available."))
   }
-  
-  # Create currency cards
+
   currency_cards <- lapply(currency_cols, function(col) {
     yesterday_val <- as.numeric(currency_data_list[1, col])
     today_val <- as.numeric(currency_data_list[2, col])
-    
+
     if (!is.na(yesterday_val) && !is.na(today_val) && yesterday_val != 0) {
       change <- ((today_val / yesterday_val) - 1) * 100
       color <- ifelse(change > 0, "#28a745", ifelse(change < 0, "#dc3545", "#666"))
       arrow <- ifelse(change > 0, "▲", ifelse(change < 0, "▼", "-"))
-      
+
       div(
         class = "currency-card",
         style = paste0(
@@ -283,26 +281,24 @@ output$currencyTicker <- renderUI({
           "min-width: 120px; ",
           "box-shadow: 0 2px 4px rgba(0,0,0,0.3);"
         ),
-        div(style = "font-weight: bold; font-size: 14px; margin-bottom: 5px;", 
+        div(style = "font-weight: bold; font-size: 14px; margin-bottom: 5px;",
             paste0(toupper(col), "/", toupper(base_currency))),
-        div(style = paste0("color: ", color, "; font-size: 12px; margin-bottom: 3px;"), 
+        div(style = paste0("color: ", color, "; font-size: 12px; margin-bottom: 3px;"),
             paste(arrow, sprintf("%.2f%%", abs(change)))),
-        div(style = "color: #dcdddd; font-size: 16px; font-weight: 500;", 
+        div(style = "color: #dcdddd; font-size: 16px; font-weight: 500;",
             sprintf("%.4f", today_val))
       )
     } else {
       NULL
     }
   })
-  
-  # Remove NULL entries
+
   currency_cards <- currency_cards[!sapply(currency_cards, is.null)]
-  
-  if(length(currency_cards) == 0) {
+
+  if (length(currency_cards) == 0) {
     return(div(style = "text-align: center; padding: 20px; color: #666;", "No valid currency data."))
   }
-  
-  # Create scrolling container
+
   div(
     id = "currency-ticker-container",
     style = paste0(
@@ -314,26 +310,42 @@ output$currencyTicker <- renderUI({
       "background: #101111; ",
       "border-top: 1px solid #333; ",
       "padding: 10px 0; ",
-      "overflow-x: auto; ",
-      "white-space: nowrap; ",
-      "scrollbar-width: none; ", # Firefox
-      "-ms-overflow-style: none; " # IE
+      "overflow: hidden; "
     ),
     tags$style(HTML("
-      #currency-ticker-container::-webkit-scrollbar { display: none; }
-      .currency-card { 
-        animation: slideLeft 30s linear infinite; 
+      #currency-ticker-container {
+        overflow: hidden;
+        white-space: nowrap;
       }
-      @keyframes slideLeft {
-        0% { transform: translateX(100vw); }
-        100% { transform: translateX(-100%); }
+
+      .ticker-track {
+        display: inline-block;
+        white-space: nowrap;
+        animation: tickerMove 30s linear infinite;
       }
-      .currency-card:hover { animation-play-state: paused; }
+
+      .ticker-track:hover {
+        animation-play-state: paused;
+      }
+
+      .currency-card {
+        display: inline-block;
+        margin-right: 20px;
+      }
+
+      @keyframes tickerMove {
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-50%); }
+      }
     ")),
-    currency_cards
+    div(
+      class = "ticker-track",
+      currency_cards,
+      currency_cards # duplicate for infinite loop
+    )
   )
 })
-  
+
   output$stock_comparison_plot = renderPlotly({
     req(input$stock_symbols, input$stocks_comparison_dateRange, input$stock_comparison_interval)
     

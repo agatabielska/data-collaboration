@@ -7,8 +7,7 @@ library(ggplot2)
 library(dplyr)
 library(httr)
 library(slickR)
-library(shinyBS)
-install.packages("DT", dependencies = TRUE) # Ensure DT is installed
+library(shinyBS)# Ensure DT is installed
 library(DT) # Added DT library
 source("api.r")
 
