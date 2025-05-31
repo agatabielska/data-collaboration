@@ -1,8 +1,6 @@
 library(plotly)
 library(webshot2)
 library(promises)
-library(future)
-plan(multisession)
 library(htmlwidgets)
 library(ggplot2)
 library(slickR)
@@ -280,21 +278,12 @@ function(input, output, session) {
       return(NULL)
     }
 
-    batch_size <- 3
-    batches <- split(currency_cols, ceiling(seq_along(currency_cols) / batch_size))
-
-    plan(multisession, workers = min(length(batches), availableCores() - 1))
-
-    # Run in parallel - now currency_cols is already filtered
-    currency_items <- future_map(currency_cols, process_currency,
-                                currency_data_list = currency_data_list,
-                                chosen_currencies = chosen_currencies,
-                                base_currency = base_currency,
-                                .options = furrr_options(seed = TRUE))
-
-    currency_items <- unlist(currency_items[!sapply(currency_items, is.null)])
-    plan(sequential)
-
+    for (col in currency_cols) {
+      item <- process_currency(col, currency_data_list, chosen_currencies, base_currency)
+      if (!is.null(item)) {
+        currency_items <- c(currency_items, item)
+      }
+    }
     
     if (length(currency_items) == 0) {
       return(HTML('<div style="text-align: center; padding: 20px; color: #666;">No currency data available.</div>'))

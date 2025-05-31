@@ -3,8 +3,8 @@ library(shiny)
 library(httr)
 library(jsonlite)
 library(dplyr)
-library(future)
-library(furrr)
+# library(future)
+# library(furrr)
 library(plotly)
 library(lubridate)
 
@@ -14,15 +14,13 @@ twelve_apikey = '6abb374eb01c45979b59e87327fed240'
 full_api <- function(date="latest", base_currency="usd") {
   url <- sprintf("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@%s/v1/currencies/%s.json", date, base_currency)
   response <- GET(url)
-
   if (status_code(response) == 200) {
     data <- content(response, "text", encoding = "UTF-8")
     data <- fromJSON(data)
   }
-  else {
+  else {  
     return(NULL)
   }
-
   df = data.frame(t(unlist(data[[base_currency]])))
   df = df[, -1]
   
@@ -31,26 +29,47 @@ full_api <- function(date="latest", base_currency="usd") {
 }
 
 from_to_values <- function(base_currency = "usd", start_date = "2024-03-01", end_date = "2025-05-13") {
-  plan(multisession, workers = parallel::detectCores() - 1)
+  dates <- seq(as.Date(start_date), as.Date(end_date), by = 1)
   
-  dates <- seq(as.Date(start_date), as.Date(end_date), by=1)
-
-  results <- future_map_dfr(dates, function(date) {
+  results <- NULL
+  
+  for (i in seq_along(dates)) {
+    date <- dates[i]
+    
     row <- full_api(as.character(date), base_currency)
+    
     if (!is.null(row)) {
-      return(row)
+      if (is.null(results)) {
+        results <- row
+      } else {
+        all_cols <- union(names(results), names(row))
+        for (col in setdiff(all_cols, names(results))) {
+          results[[col]] <- NA
+        }
+
+        for (col in setdiff(all_cols, names(row))) {
+          row[[col]] <- NA
+        }
+
+        results <- results[, all_cols, drop = FALSE]
+        row <- row[, all_cols, drop = FALSE]
+
+        results <- rbind(results, row)
+      }
     } else {
-      return(NULL)
+      print(paste("No data for date:", as.character(date)))
     }
-  }, .progress = TRUE)
+  }
   
-  plan(sequential)
+  if (!is.null(results)) {
+    print(paste("Final results dimensions:", nrow(results), "rows,", ncol(results), "columns"))
+  }
   
   return(results)
 }
 
 two_days_values <- function(base_currency = "usd", start_date = "2024-03-01", end_date = "2025-05-13") {
-  plan(multisession, workers = parallel::detectCores() - 1)
+  # plan(multisession, workers = parallel::detectCores() - 1)
   
   row1 <- full_api(as.character(start_date), base_currency)
   row2 <- full_api(as.character(end_date), base_currency)
@@ -70,7 +89,7 @@ two_days_values <- function(base_currency = "usd", start_date = "2024-03-01", en
   } else {
     results <- NULL
   }
-  plan(sequential)
+  # plan(sequential)
   
   return(results)
 }
