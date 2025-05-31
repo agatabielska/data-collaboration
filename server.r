@@ -352,6 +352,7 @@ output$currencyTicker <- renderUI({
     div(
       class = "ticker-track",
       currency_cards,
+      currency_cards, # duplicate for infinite loop
       currency_cards # duplicate for infinite loop
     )
   )

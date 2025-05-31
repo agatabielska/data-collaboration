@@ -20,7 +20,7 @@ jobs:
           docker run --rm \
             -e SHINYAPPS_TOKEN="${{ secrets.SHINYAPPS_TOKEN }}" \
             -e SHINYAPPS_SECRET="${{ secrets.SHINYAPPS_SECRET }}" \
-            -e APP_NAME="data" \
+            -e APP_NAME="data-collab" \
             -e ACCOUNT_NAME="agatabielska" \
             -v ${{ github.workspace }}:/app \
             shiny-deploy
