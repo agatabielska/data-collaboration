@@ -3,8 +3,6 @@ library(shiny)
 library(httr)
 library(jsonlite)
 library(dplyr)
-# library(future)
-# library(furrr)
 library(plotly)
 library(lubridate)
 

@@ -239,7 +239,7 @@ function(input, output, session) {
                plot_bgcolor = "#2c2c2c",
                font = list(color = 'white'))
     }
-    p=
+    p
   })
 
 
