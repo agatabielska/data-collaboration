@@ -118,6 +118,17 @@ vantage_top_gainers = function() {
   }
 }
 
+vantage_top_losers = function() {
+  url = 'https://www.alphavantage.co/query?function=TOP_GAINERS_LOSERS&apikey=demo'
+  res = GET(url)
+  if (status_code(res) == 200) {
+    content = fromJSON(content(res, "text", encoding = "UTF-8"))
+    return(content$top_losers)
+  } else {
+    return(NULL)
+  }
+}
+
 vantage_market_status = function() {
   url = 'https://www.alphavantage.co/query?function=MARKET_STATUS&apikey=demo'
   res = GET(url)
@@ -303,6 +314,19 @@ twelve_compare = function(symbols, from, to, interval = '1day', api_key){
   return(fig)
 }
 
+vantage_market = function() {
+  url = 'https://www.alphavantage.co/query?function=MARKET_STATUS&apikey=demo'
+  res = GET(url)
+  if (status_code(res) == 200) {
+    content = fromJSON(content(res, "text", encoding = "UTF-8"))
+    markets_df = data.frame(content$markets)
+    markets_df$notes <- NULL
+    return(markets_df)
+  } else {
+    return(NULL)
+  }
+}
+
 # colnames(short_to_currency("2024-03-06"))
 
 # currency_transformer <- currency_finder()
@@ -317,8 +341,9 @@ twelve_compare = function(symbols, from, to, interval = '1day', api_key){
 # vantage_grab(q, 'metadata')
 # vantage_daily_plot("GOOG", api_key = apikey)
 #twelve_candle('AAPL', as.Date('2024-05-23'), as.Date('2025-05-26') twelve_apikey)
-url = paste0('https://api.twelvedata.com/heikinashicandles?symbol=AAPL,GOOG&interval=1day&apikey=',twelve_apikey)
-twelve_compare(c('AAPL','GOOG'), '2023-01-01', '2025-01-01', '1day', twelve_apikey)
+#url = paste0('https://api.twelvedata.com/heikinashicandles?symbol=AAPL,GOOG&interval=1day&apikey=',twelve_apikey)
+#twelve_compare(c('AAPL','GOOG'), '2023-01-01', '2025-01-01', '1day', twelve_apikey)
+#vantage_market()
 
 
 

@@ -8,6 +8,7 @@ library(dplyr)
 library(httr)
 library(slickR)
 library(shinyBS)
+library(DT) # Added DT library
 source("api.r")
 
 currency_list <- colnames(currency_finder())
@@ -38,7 +39,8 @@ dashboardPage(
         tabName = "stocks_main", 
         icon = icon("chart-line"),
         menuSubItem("Stock Overview", tabName = "stocks", icon = icon("chart-line")),
-        menuSubItem("Stock Comparison", tabName = "stocks_comparison", icon = icon("balance-scale"))
+        menuSubItem("Stock Comparison", tabName = "stocks_comparison", icon = icon("balance-scale")),
+        menuSubItem("Market Status", tabName = "market_status", icon = icon("table")) # Added Market Status sub-item
       )
     ),
     conditionalPanel(
@@ -360,13 +362,25 @@ dashboardPage(
         ),
         fluidRow(
           box(
-            title = "Top Gainers",
+            title = "Top Losers",
             status = "success",
             solidHeader = TRUE,
             width = 12,
             collapsible = TRUE,
             collapsed = FALSE,
-            uiOutput("top_gainers_comparison_ui")
+            uiOutput("top_losers_comparison_ui")
+          )
+        )
+      ),
+      tabItem(
+        tabName = "market_status",
+        fluidRow(
+          box(
+            title = "Global Market Status",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            DTOutput("market_status_table")
           )
         )
       ),
@@ -460,7 +474,7 @@ dashboardPage(
     ),
     
     tags$script(HTML(
-      '$(document).ready(function() {\n        var newMenuItemHTML = \'<a href="#shiny-tab-about_page_content" data-toggle="tab" data-value="about_page_content" style="color: white; display: flex; align-items: center; padding: 15px;"><i class="fa fa-info-circle" style="margin-right: 5px;"></i> <span>About</span></a>\';\n        var $newlyAddedLink = $(newMenuItemHTML);\n        $("nav").append($newlyAddedLink);\n\n        $newlyAddedLink.on(\'click\', function(e) {\n          e.preventDefault(); \n          if (typeof Shiny !== \'undefined\' && Shiny.setInputValue) {\n            Shiny.setInputValue("tabs", "about_page_content", { priority: "event" });\n          }\n        });\n      });'
+      '$(document).ready(function() {\n        var newMenuItemHTML = \'<a href="#shiny-tab-about_page_content" data-toggle="tab" data-value="about_page_content" style="color: white; display: flex; align-items: center; padding: 15px;"><i class="fa fa-info-circle" style="margin-right: 5px;"></i> <span>About</span></a>\';\n        var $newlyAddedLink = $(newMenuItemHTML);\n        $("nav").append($newlyAddedLink);\n\n        $newlyAddedLink.on(\'click\', function(e) {\n          e.preventDefault(); \n          if (typeof Shiny !== \'undefined\' && Shiny.setInputValue) {\n            Shiny.setInputValue("tabs", "about_page_content", { priority: "event" });\n          }\n        });\n        \n        // Auto-trigger About page on load\n        setTimeout(function() {\n          $newlyAddedLink.trigger(\'click\');\n        }, 500);\n      });'
     ))
   )
 )
