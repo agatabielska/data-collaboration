@@ -8,7 +8,7 @@ library(dplyr)
 library(httr)
 library(slickR)
 library(shinyBS)
-library(DT) # Added DT library
+library(DT) 
 source("api.r")
 
 currency_list <- colnames(currency_finder())
@@ -20,7 +20,7 @@ dashboardPage(
   skin = "black",
   dashboardHeader(
     title = tagList(
-      span("Multi-Page Dashboard")
+      "Currency and stock Dashboard"
     )
   ),
   dashboardSidebar(
@@ -415,14 +415,14 @@ dashboardPage(
     ),
     
     tags$div(
-      style = "position: fixed; bottom: 90px; right: 20px; z-index: 1000; background: #101111; border-radius: 5px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);",
+      style = "position: fixed; bottom: 120px; right: 20px; z-index: 1000; background: #101111; border-radius: 5px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);",
       class = "ticker-settings",
       actionButton("tickerSettings", "⚙️ Settings", class = "settings-btn")
     ),
     
     tags$div(
-      style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 999 ; background: #101111; border-top: 1px solid #101111; padding: 0px 0;",
-      slickROutput("currencyTicker", height = "60px")
+      style = "position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;",
+      uiOutput("currencyTicker")
     ),
     
     # Settings Modal
@@ -461,7 +461,7 @@ dashboardPage(
             style = "margin-top: 15px; padding: 10px; background-color: #101111; border-radius: 5px; border-left: 4px solid #25be76 ;",
             tags$small(
               style = "color: #dcdddd;",
-              HTML("<strong>Tip:</strong> Select up to 50 currencies to display in the ticker. Default selection includes 8 major currencies. <br>You can reset to defaults at any time. Note that this can take a while to load if many currencies are selected.")
+              HTML("<strong>Tip:</strong> Select up to 50 currencies to display in the ticker. Default selection includes 8 major currencies. <br>You can reset to defaults at any time.")
             )
           )
         )
@@ -475,6 +475,14 @@ dashboardPage(
     
     tags$script(HTML(
       '$(document).ready(function() {\n        var newMenuItemHTML = \'<a href="#shiny-tab-about_page_content" data-toggle="tab" data-value="about_page_content" style="color: white; display: flex; align-items: center; padding: 15px;"><i class="fa fa-info-circle" style="margin-right: 5px;"></i> <span>About</span></a>\';\n        var $newlyAddedLink = $(newMenuItemHTML);\n        $("nav").append($newlyAddedLink);\n\n        $newlyAddedLink.on(\'click\', function(e) {\n          e.preventDefault(); \n          if (typeof Shiny !== \'undefined\' && Shiny.setInputValue) {\n            Shiny.setInputValue("tabs", "about_page_content", { priority: "event" });\n          }\n        });\n        \n        // Auto-trigger About page on load\n        setTimeout(function() {\n          $newlyAddedLink.trigger(\'click\');\n        }, 500);\n      });'
-    ))
+    )),
+
+    tags$div(
+      style = "position: fixed; left: 5%; transform: translateX(-50%); bottom: 17%; z-index: 1001;",
+      tags$img(src = "PP_znak_konturowy_WHITE.png", width = "100px", height = "100px")
+    ),
+    tags$head(
+        tags$link(rel = "icon", type = "image/png", sizes = "32x32", href = "PP_znak_konturowy_WHITE.png"))
+
   )
 )

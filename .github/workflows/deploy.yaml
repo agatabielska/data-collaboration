@@ -1,0 +1,26 @@
+name: Deploy to shinyapps.io
+on:
+  # run on any push 
+  push:
+  # run on request (via button in actions menu)
+  workflow_dispatch:
+      
+jobs:
+  deploy:
+    name: Deploy to shinyapps
+    # allow skipping deployment for commits containing '[automated]' or '[no-deploy]' in the commit message
+    if: "!contains(github.event.head_commit.message, '[automated]') && !contains(github.event.head_commit.message, '[no-deploy]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Build and run deployment container
+        run: |
+          docker build -t shiny-deploy .
+          docker run --rm \
+            -e SHINYAPPS_TOKEN="${{ secrets.SHINYAPPS_TOKEN }}" \
+            -e SHINYAPPS_SECRET="${{ secrets.SHINYAPPS_SECRET }}" \
+            -e APP_NAME="data" \
+            -e ACCOUNT_NAME="agatabielska" \
+            -v ${{ github.workspace }}:/app \
+            shiny-deploy
