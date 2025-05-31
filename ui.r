@@ -7,8 +7,8 @@ library(ggplot2)
 library(dplyr)
 library(httr)
 library(slickR)
-library(shinyBS)# Ensure DT is installed
-library(DT) # Added DT library
+library(shinyBS)
+library(DT) 
 source("api.r")
 
 currency_list <- colnames(currency_finder())
@@ -476,7 +476,7 @@ dashboardPage(
     tags$script(HTML(
       '$(document).ready(function() {\n        var newMenuItemHTML = \'<a href="#shiny-tab-about_page_content" data-toggle="tab" data-value="about_page_content" style="color: white; display: flex; align-items: center; padding: 15px;"><i class="fa fa-info-circle" style="margin-right: 5px;"></i> <span>About</span></a>\';\n        var $newlyAddedLink = $(newMenuItemHTML);\n        $("nav").append($newlyAddedLink);\n\n        $newlyAddedLink.on(\'click\', function(e) {\n          e.preventDefault(); \n          if (typeof Shiny !== \'undefined\' && Shiny.setInputValue) {\n            Shiny.setInputValue("tabs", "about_page_content", { priority: "event" });\n          }\n        });\n        \n        // Auto-trigger About page on load\n        setTimeout(function() {\n          $newlyAddedLink.trigger(\'click\');\n        }, 500);\n      });'
     )),
-    # Add fixed logo at the bottom center
+
     tags$div(
       style = "position: fixed; left: 5%; transform: translateX(-50%); bottom: 17%; z-index: 1001;",
       tags$img(src = "PP_znak_konturowy_WHITE.png", width = "100px", height = "100px")
