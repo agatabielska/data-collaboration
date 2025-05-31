@@ -16,15 +16,24 @@ jobs:
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
+      - name: Set R_LIBS_USER env var
+        run: echo "R_LIBS_USER=${{ github.workspace }}/.Rlib" >> $GITHUB_ENV
+
+      - name: Create library directory
+        run: mkdir -p ${{ github.workspace }}/.Rlib
+
       - name: Install rsconnect
-        run: Rscript -e 'install.packages("rsconnect", repos = "https://cloud.r-project.org")'
+        run: Rscript -e 'install.packages("rsconnect", lib = Sys.getenv("R_LIBS_USER"), repos = "https://cloud.r-project.org")'
 
       - name: Check rsconnect installation
-        run: Rscript -e 'library(rsconnect); packageVersion("rsconnect"); print(.libPaths())'
+        run: |
+          Rscript -e 'print(.libPaths())'
+          Rscript -e 'library(rsconnect, lib.loc = Sys.getenv("R_LIBS_USER")); packageVersion("rsconnect")'
 
       - name: Deploy to shinyapps.io
         env:
           SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}
           SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
           SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
+          R_LIBS_USER: ${{ github.workspace }}/.Rlib
         run: Rscript deploy.R

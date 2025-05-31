@@ -20,18 +20,26 @@ function(input, output, session) {
   ticker_display_currencies <- reactiveVal(c("eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "inr"))
 
   observeEvent(input$saveSettings, {
+    base_currency <- input$ticker_base_currency
+    display_currencies <- input$ticker_display_currencies
+\
     display_currencies <- display_currencies[display_currencies != base_currency]
     
-    if (length(display_currencies) == 0) {
-      showNotification("Please select at least one currency to display!", type = "warning", duration = 5)
+    if (length(display_currencies) <= 7) {
+      showNotification("Please select more than 7 currencies to display!", type = "warning", duration = 5)
       return()
     }
-    
+
     ticker_base_currency(base_currency)
     ticker_display_currencies(display_currencies)
+
     toggleModal(session, "settingsModal", toggle = "close")
-    showNotification(paste("Ticker settings updated! Showing", length(display_currencies), "currencies against", toupper(base_currency)), type = "message", duration = 3)
+    showNotification(
+      paste("Ticker settings updated! Showing", length(display_currencies), "currencies against", toupper(base_currency)),
+      type = "message", duration = 3
+    )
   })
+
 
   observeEvent(input$resetDefaults, {
     updateSelectizeInput(session, "ticker_base_currency", selected = "usd")
@@ -240,11 +248,14 @@ function(input, output, session) {
  # Replace your currencyTicker output in server.r with this:
 
 output$currencyTicker <- renderUI({
+  req(ticker_base_currency(), ticker_display_currencies())
+  
+  base_currency <- ticker_base_currency()
+  chosen_currencies <- ticker_display_currencies()
+
   today <- format(Sys.Date(), "%Y-%m-%d")
   yesterday <- format(Sys.Date() - 1, "%Y-%m-%d")
 
-  base_currency <- ticker_base_currency()
-  chosen_currencies <- ticker_display_currencies()
 
   currency_data_list <- two_days_values(base_currency, today, yesterday)
   req(currency_data_list)
@@ -286,7 +297,7 @@ output$currencyTicker <- renderUI({
         div(style = paste0("color: ", color, "; font-size: 12px; margin-bottom: 3px;"),
             paste(arrow, sprintf("%.2f%%", abs(change)))),
         div(style = "color: #dcdddd; font-size: 16px; font-weight: 500;",
-            sprintf("%.4f", today_val))
+            sprintf("%.4f", 1/today_val))
       )
     } else {
       NULL
@@ -294,6 +305,7 @@ output$currencyTicker <- renderUI({
   })
 
   currency_cards <- currency_cards[!sapply(currency_cards, is.null)]
+  duration_seconds <- max(28, length(currency_cards) * 4)
 
   if (length(currency_cards) == 0) {
     return(div(style = "text-align: center; padding: 20px; color: #666;", "No valid currency data."))
@@ -312,7 +324,7 @@ output$currencyTicker <- renderUI({
       "padding: 10px 0; ",
       "overflow: hidden; "
     ),
-    tags$style(HTML("
+    tags$style(HTML(sprintf("
       #currency-ticker-container {
         overflow: hidden;
         white-space: nowrap;
@@ -321,7 +333,7 @@ output$currencyTicker <- renderUI({
       .ticker-track {
         display: inline-block;
         white-space: nowrap;
-        animation: tickerMove 30s linear infinite;
+        animation: tickerMove %ds linear infinite;
       }
 
       .ticker-track:hover {
@@ -334,10 +346,10 @@ output$currencyTicker <- renderUI({
       }
 
       @keyframes tickerMove {
-        0% { transform: translateX(0%); }
-        100% { transform: translateX(-50%); }
+        0%% { transform: translateX(0%%); }
+        100%% { transform: translateX(-50%%); }
       }
-    ")),
+    ", duration_seconds))),
     div(
       class = "ticker-track",
       currency_cards,
