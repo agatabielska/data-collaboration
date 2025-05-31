@@ -22,7 +22,6 @@ function(input, output, session) {
   observeEvent(input$saveSettings, {
     base_currency <- input$ticker_base_currency
     display_currencies <- input$ticker_display_currencies
-\
     display_currencies <- display_currencies[display_currencies != base_currency]
     
     if (length(display_currencies) <= 7) {
